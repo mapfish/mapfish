@@ -1,0 +1,5 @@
+How to install the library:
+
+python setup.py egg_info
+python setup.py bdist_egg
+easy_install dist/CartoWeb-0.0-py2.5.egg 
