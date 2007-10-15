@@ -26,7 +26,7 @@ class Feature(object):
 class FeatureCollection(list):
     @property
     def __geo_interface__(self):
-        return {'members': self}
+        return {'features': self}
 
 
 if __name__ == '__main__':
