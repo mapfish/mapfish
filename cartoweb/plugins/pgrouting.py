@@ -1,3 +1,23 @@
+# 
+# Copyright (C) 2007  Camptocamp
+#  
+# This file is part of CartoWeb
+#  
+# ClownFish is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#  
+# Foobar is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#  
+# You should have received a copy of the GNU Lesser General Public License
+# along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+#
+
+
 # SELECT * FROM shortest_path('SELECT gid AS id, node1_id::int4 AS source, node2_id::int4 AS target, 1.0::float8 AS cost FROM lines2', 0, 0, false, false);
 def shortest_path(engine, sql, source_id, target_id,
                   directed = False, has_reverse_cost = False):
