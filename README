@@ -2,4 +2,4 @@
 
 python setup.py egg_info
 python setup.py bdist_egg
-easy_install dist/CartoWeb-0.0-py2.5.egg 
+easy_install dist/MapFish-0.0-py2.5.egg 
