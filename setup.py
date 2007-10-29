@@ -21,12 +21,11 @@
 from setuptools import setup
 
 setup(name             = 'MapFish',
-      version          = '0.0',
-      license          = 'GPL',
-      install_requires = ['SQLAlchemy >= 0.3',
-                          'Shapely',
-                          'GeoJSON >= 1.0'],
-      dependency_links = ["http://dev.camptocamp.com/packages/eggs/"],
+      version          = '0.1',
+      license          = 'LGPLv3',
+      install_requires = ['SQLAlchemy == 0.4.0',
+                          'Shapely == 1.0a7',
+                          'GeoJSON == 1.0a3'],
       zip_safe         = True,
       packages         = ['mapfish', 'mapfish.plugins'],
       classifiers      = [
