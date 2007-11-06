@@ -37,5 +37,9 @@ setup(name             = 'MapFish',
         'Programming Language :: Python',
         'Topic :: Scientific/Engineering :: GIS',
         ],
+      entry_points      = """
+        [paste.paster_create_template]
+        mapfish = mapfish.util:MapFishTemplate
+        """
 )
 
