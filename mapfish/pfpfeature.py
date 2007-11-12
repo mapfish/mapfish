@@ -19,14 +19,13 @@
 
 
 """
-Feature class implementing the Python Feature Protocol.
-See http://trac.gispython.org/projects/PCL/wiki/PythonFeatureProtocol
+Feature class implementing the Python Geo Interface
+See http://trac.gispython.org/projects/PCL/wiki/PythonGeoInterface
 
 Objects of this class can be serialized to GeoJSON using PCL's
 GeoJSON dump call.
 
 See http://trac.gispython.org/projects/PCL/browser/GeoJSON
-    http://trac.gispython.org/projects/PCL/wiki/PythonGeoInterface
 """
 
 class Feature(object):
