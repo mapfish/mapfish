@@ -1,0 +1,12 @@
+# Layer configuration file
+
+# Example:
+#
+# [users]
+# singular=user
+# db=dbname
+# table=users
+# epsg=4326
+# units=degrees
+# geomcolumn=the_geom
+# idcolumn=Integer:id

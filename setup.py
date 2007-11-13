@@ -24,8 +24,8 @@ setup(name             = 'MapFish',
       version          = '0.1',
       license          = 'LGPLv3',
       install_requires = ['SQLAlchemy == 0.4.0',
-                          'Shapely == 1.0a7',
-                          'GeoJSON == 1.0a3'],
+                          'Shapely >= 1.0a7',
+                          'GeoJSON >= 1.0a3'],
       zip_safe         = True,
       packages         = ['mapfish', 'mapfish.plugins'],
       classifiers      = [
@@ -40,6 +40,9 @@ setup(name             = 'MapFish',
       entry_points      = """
         [paste.paster_create_template]
         mapfish = mapfish.util:MapFishTemplate
+        [paste.paster_command]
+        mf-controller = mapfish.commands:MapFishControllerCommand
+        mf-model = mapfish.commands:MapFishModelCommand
+        mf-layer = mapfish.commands:MapFishLayerCommand
         """
 )
-
