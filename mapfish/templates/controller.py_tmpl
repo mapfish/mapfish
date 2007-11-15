@@ -38,6 +38,21 @@ class ${contrClass}Controller(BaseController):
             ${modelTabObj}.c.${geomColName},
             ${epsg}, '${units}')
         expr = search.buildExpression(request)
+        #
+        # CUSTOM CODE GOES HERE
+        #
+        # Here you can augment the expression with your own app-specific
+        # filters.
+        #
+        # Example:
+        # if 'name' in request.params:
+        #     e = model.summits_table.c.name.op('ilike')('%' + request.params['name']  + '%')
+        #     # update query expression
+        #     if (expr is not None):
+        #         expr = and_(expr, e)
+        #     else:
+        #         expr = e
+        #
         objects = search.query(
             model.Session, ${modelClass}, ${modelTabObj}, expr)
         if len(objects) != 0:
