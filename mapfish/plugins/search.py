@@ -51,7 +51,7 @@ class Search:
         if 'maxfeatures' in request.params:
             self.limit = int(request.params['maxfeatures'])
         
-        epsg = self.EPSG
+        epsg = self.epsg
         if 'epsg' in request.params:
             epsg = request.params['epsg']
 
