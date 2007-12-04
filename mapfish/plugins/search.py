@@ -67,11 +67,15 @@ class Search:
                 pgPoint = func.transform(pgPoint, self.epsg)
 
             # build query expression
-            if self.units == 'degrees':
-                dist = func.distance_sphere(self.geomColumn, pgPoint)
+            radius = float(request.params['radius'])
+            if radius > 0:
+                if self.units == 'degrees':
+                    dist = func.distance_sphere(self.geomColumn, pgPoint)
+                else:
+                    dist = func.distance(self.geomColumn, pgPoint)
+                e = dist < radius
             else:
-                dist = func.distance(self.geomColumn, pgPoint)
-            e = dist < float(request.params['radius'])
+                e = func.within(pgPoint, self.geomColumn)
 
             # update query expression
             if expr is not None:
