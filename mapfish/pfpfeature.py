@@ -38,14 +38,16 @@ class Feature(object):
 
     @property
     def __geo_interface__(self):
-        return {'id': self.id,
+        return {'type': 'Feature',
+                'id': self.id,
                 'geometry': self.geometry,
                 'properties': self.properties}
 
 class FeatureCollection(list):
     @property
     def __geo_interface__(self):
-        return {'features': self}
+        return {'type': 'FeatureCollection',
+                'features': self}
 
 
 if __name__ == '__main__':
