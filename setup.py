@@ -17,18 +17,23 @@
 # along with MapFish.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+try:
+    from setuptools import setup, find_packages
+except ImportError:
+    from ez_setup import use_setuptools
+    use_setuptools()
+    from setuptools import setup, find_packages
 
-from setuptools import setup
-
-setup(name             = 'MapFish',
-      version          = '0.1',
-      license          = 'LGPLv3',
-      install_requires = ['SQLAlchemy == 0.4.0',
-                          'Shapely >= 1.0a7',
-                          'GeoJSON >= 1.0a3'],
-      zip_safe         = True,
-      packages         = ['mapfish', 'mapfish.plugins'],
-      classifiers      = [
+setup(name                 = 'MapFish',
+      version              = '0.1',
+      license              = 'LGPLv3',
+      install_requires     = ['SQLAlchemy == 0.4.0',
+                              'Shapely >= 1.0a7',
+                              'GeoJSON >= 1.0a3'],
+      zip_safe             = False,
+      include_package_data = True,
+      packages             = find_packages(),
+      classifiers          = [
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
@@ -37,7 +42,7 @@ setup(name             = 'MapFish',
         'Programming Language :: Python',
         'Topic :: Scientific/Engineering :: GIS',
         ],
-      entry_points      = """
+      entry_points         = """
         [paste.paster_create_template]
         mapfish = mapfish.util:MapFishTemplate
         [paste.paster_command]
