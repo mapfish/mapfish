@@ -19,16 +19,17 @@ port = 5000
 use = egg:Paste#urlmap
 / = main_pylons
 /mfbase = mfbase
-/cwbase = cwbase
+#/examples = examples
 
 [app:mfbase]
 use = egg:Paste#static
-document_root = ${mapfishclientpath}/mfbase/
+document_root = ${mapfishclientmfbasepath}/
 
-# For compatibility with Dojo, to be removed in future
-[app:cwbase]
-use = egg:Paste#static
-document_root = ${mapfishclientpath}/cwbase/
+# Uncomment this section and the corresponding line in the [composite:main]
+# section if you want access to the MapFish examples in the project
+#[app:examples]
+#use = egg:Paste#static
+#document_root = /path/to/MapFish/client/examples/
 
 [app:main_pylons]
 use = egg:${project}
