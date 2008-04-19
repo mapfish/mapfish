@@ -1,5 +1,5 @@
 # 
-# Copyright (C) 2007  Camptocamp
+# Copyright (C) 2007-2008 Camptocamp
 #  
 # This file is part of MapFish
 #  
@@ -20,7 +20,7 @@
 
 """
 SQLAlchemy geometry type support
-see: http://www.sqlalchemy.org/docs/types.html#types_custom
+see: http://www.sqlalchemy.org/docs/04/types.html#types_custom
 
   Example
   -------
