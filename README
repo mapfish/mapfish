@@ -1,5 +1,12 @@
-  How to install the library:
+How to build and install the MapFish Python library:
 
-python setup.py egg_info
-python setup.py bdist_egg
-easy_install dist/MapFish-0.0-py2.5.egg 
+In the MapFish/server/python/ directory:
+  python setup.py egg_info
+  python setup.py bdist_egg
+  easy_install dist/MapFish-x.y-py2.5.egg 
+or 
+  easy_install dist/MapFish-x.y-py2.4.egg 
+if you use Python 2.4
+
+More informations about Python eggs can be found here:
+http://peak.telecommunity.com/DevCenter/PythonEggs
