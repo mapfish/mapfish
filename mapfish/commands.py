@@ -231,6 +231,7 @@ class MapFishModelCommand(Command):
             singularName = config.get(name, 'singular')
             db = config.get(name, 'db')
             table = config.get(name, 'table')
+            epsg = config.get(name, 'epsg')
             idColType, idColName = \
                 config.get(name, 'idcolumn').split(':')[:2]
             geomColName = config.get(name, 'geomcolumn')
@@ -256,6 +257,7 @@ class MapFishModelCommand(Command):
                  'modelTabObj': modelTabObj,
                  'db': db,
                  'table': table,
+                 'epsg': epsg,
                  'idColType': idColType,
                  'idColName': idColName,
                  'geomColName': geomColName})

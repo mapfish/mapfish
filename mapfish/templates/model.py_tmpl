@@ -29,7 +29,8 @@ from mapfish.pfpfeature import Feature
 ${modelTabObj} = Table('${table}',
     MetaData(config['pylons.g'].sa_${db}_engine),
     Column('${idColName}', types.${idColType}, primary_key=True),
-    Column('${geomColName}', Geometry),
+    Column('${geomColName}', Geometry(${epsg}))
+    ),
     autoload=True)
 
 class ${modelClass}(object):

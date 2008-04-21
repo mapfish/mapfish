@@ -36,7 +36,7 @@ metadata.connect(db)
 wifi_t = Table('wifi', metadata,
                Column('gid', Integer, primary_key=True),
                # add more columns here ...
-               Column('the_geom', Geometry)
+               Column('the_geom', Geometry(4326))
                )
 
 # basic select
@@ -60,20 +60,29 @@ print [(i.gid, i.the_geom.distance(me)) for i in r]
 
 from sqlalchemy.types import TypeEngine
 from shapely.wkb import loads
-from binascii import a2b_hex, b2a_hex
 
 class Geometry(TypeEngine):
+    def __init__(self, srid=-1, dims=2):
+        super(Geometry, self).__init__()
+        self.srid = srid
+        self.dims = dims
+
+    def get_col_spec(self):
+        return 'GEOMETRY()'
 
     def compare_values(self, x, y):
         return x.equals(y)
 
     def convert_bind_param(self, value, engine):
         """convert value from a geometry object to database"""
-        return b2a_hex(value.wkb)
+        if value is None:
+            return None
+        else:
+            return "SRID=%s;%s" % (self.srid, value.wkb.encode('hex'))
 
     def convert_result_value(self, value, engine):
         """convert value from database to a geometry object"""
-        if value is not None:
-            return loads(a2b_hex(value))
-        else:
+        if value is None:
             return None
+        else:
+            return loads(value.decode('hex'))
