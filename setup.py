@@ -27,7 +27,7 @@ except ImportError:
 setup(name                 = 'MapFish',
       version              = '0.1',
       license              = 'LGPLv3',
-      install_requires     = ['SQLAlchemy == 0.4.0',
+      install_requires     = ['SQLAlchemy >= 0.4.0',
                               'Pylons >= 0.9.6.1',
                               'Shapely >= 1.0a7',
                               'GeoJSON >= 1.0a3'],
