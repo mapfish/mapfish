@@ -48,7 +48,7 @@ class ${contrClass}Controller(BaseController):
         # if 'name' in request.params:
         #     e = model.summits_table.c.name.op('ilike')('%' + request.params['name']  + '%')
         #     # update query expression
-        #     if (expr is not None):
+        #     if expr is not None:
         #         expr = and_(expr, e)
         #     else:
         #         expr = e
