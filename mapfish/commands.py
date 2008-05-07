@@ -125,10 +125,9 @@ class MapFishControllerCommand(Command):
 
             # get layer parameters
             singularName = config.get(name, 'singular')
+            pluralName = config.get(name, 'plural')
             epsg = config.get(name, 'epsg')
             units = config.get(name, 'units')
-            idColName = config.get(name, 'idcolumn').split(':')[-1]
-            geomColName = config.get(name, 'geomcolumn')
 
             # check the name isn't the same as the package
             basePkg = fileOp.find_dir('controllers', True)[0]
@@ -158,12 +157,12 @@ class MapFishControllerCommand(Command):
             fileOp.template_vars.update(
                 {'modName': modName,
                  'fullModName': fullModName,
+                 'singularName': singularName,
+                 'pluralName': pluralName,
                  'contrClass': contrClass,
                  'modelClass': modelClass,
                  'modelTabObj': modelTabObj,
                  'basePkg': basePkg,
-                 'idColName': idColName,
-                 'geomColName': geomColName,
                  'epsg': epsg,
                  'units': units})
             fileOp.copy_file(template='controller.py_tmpl',

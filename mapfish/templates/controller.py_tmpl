@@ -21,6 +21,8 @@ import logging
 
 from sqlalchemy.sql import and_
 
+from shapely.geometry import asShape
+
 from ${basePkg}.lib.base import *
 from ${basePkg}.model.${modName} import ${modelTabObj}, ${modelClass}
 
@@ -32,10 +34,10 @@ import geojson
 log = logging.getLogger(__name__)
 
 class ${contrClass}Controller(BaseController):
-    def show(self):
+    def get(self):
         search = Search(
-            ${modelTabObj}.c.${idColName},
-            ${modelTabObj}.c.${geomColName},
+            ${modelTabObj}.c._mf_fid,
+            ${modelTabObj}.c._mf_geom,
             ${epsg}, '${units}')
         expr = search.buildExpression(request)
         #
@@ -53,8 +55,86 @@ class ${contrClass}Controller(BaseController):
         #     else:
         #         expr = e
         #
-        objects = search.query(
+        ${pluralName} = search.query(
             model.Session, ${modelClass}, ${modelTabObj}, expr)
-        if len(objects) != 0:
+        if len(${pluralName}) > 0:
             return geojson.dumps(
-                FeatureCollection([f.toFeature() for f in objects]))
+                FeatureCollection([o.toFeature() for o in ${pluralName}]))
+
+    #
+    # The post, put and delete methods are used for feature editing. If you
+    # don't want feature editing, you can just not add routes to these methods
+    # in config/routing.py. If you don't want feature editing and care about
+    # having unneeded code, you can remove these methods entirely.
+    #
+
+    def post(self):
+        content = request.environ['wsgi.input'].read(int(request.environ['CONTENT_LENGTH']))
+        factory = lambda ob: geojson.GeoJSON.to_instance(ob)
+        collection = geojson.loads(content, object_hook=factory)
+        if not isinstance(collection, geojson.feature.FeatureCollection):
+            response.status_code = 400
+            return
+        ${pluralName} = []
+        for feature in collection.features:
+            create = False
+            ${singularName} = None
+            if isinstance(feature.id, int):
+                ${singularName} = model.Session.query(${modelClass}).get(feature.id)
+            if ${singularName} is None:
+                ${singularName} = ${modelClass}(asShape(feature.geometry))
+                create = True
+            for key in feature.properties:
+                ${singularName}[key] = feature.properties[key]
+            if create:
+                model.Session.save(${singularName})
+            ${pluralName}.append(${singularName})
+        model.Session.commit()
+        response.status_code = 201
+        if len(${pluralName}) > 0:
+            return geojson.dumps(FeatureCollection([o.toFeature() for o in ${pluralName}]))
+        return
+
+    def put(self):
+        fid = self.getFid()
+        if fid is None:
+            return self.post()
+        ${singularName} = model.Session.query(${modelClass}).get(fid)
+        if ${singularName} is None:
+            response.status_code = 404
+            return
+        content = request.environ['wsgi.input'].read(int(request.environ['CONTENT_LENGTH']))
+        factory = lambda ob: geojson.GeoJSON.to_instance(ob)
+        feature = geojson.loads(content, object_hook=factory)
+        if not isinstance(feature, geojson.feature.Feature):
+            response.status_code = 400
+            return response
+        ${singularName}.geometry = asShape(feature.geometry)
+        for key in feature.properties:
+            ${singularName}[key] = feature.properties[key]
+        model.Session.commit()
+        response.status_code = 201
+        return geojson.dumps(${singularName}.toFeature())
+
+    def delete(self):
+        fid = self.getFid()
+        if fid is None:
+            response.status_code = 400
+            return
+        ${singularName} = model.Session.query(${modelClass}).get(fid)
+        if ${singularName} is None:
+            response.status_code = 404
+            return
+        model.Session.delete(${singularName})
+        model.Session.commit()
+        response.status_code = 204
+        return
+
+    def getFid(self):
+        fid = None
+        path = request.path_info.split("/")
+        if len(path) > 1:
+            pathPieces = path[-1].split(".")
+            if pathPieces[0].isdigit():
+                fid = int(pathPieces[0])
+        return fid

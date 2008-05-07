@@ -28,18 +28,38 @@ from mapfish.pfpfeature import Feature
 
 ${modelTabObj} = Table('${table}',
     MetaData(config['pylons.g'].sa_${db}_engine),
-    Column('${idColName}', types.${idColType}, primary_key=True),
-    Column('${geomColName}', Geometry(${epsg})),
+    Column('${idColName}', types.${idColType}, key='_mf_fid', primary_key=True),
+    Column('${geomColName}', Geometry(${epsg}), key='_mf_geom'),
     autoload=True)
 
 class ${modelClass}(object):
+    def __init__(self, geometry):
+        self._mf_geom = geometry
+
+    def _getgeom(self):
+        return self._mf_geom
+
+    def _setgeom(self, val):
+        self._mf_geom = val
+
+    geometry = property(_getgeom, _setgeom)
+
+    def __getitem__(self, key):
+        return self.__dict__[key]
+
+    def __setitem__(self, key, val):
+        if key in self.c.keys():
+            self.__dict__[key] = val
+
+    def __contains__(self, key):
+        return key in self.__dict__
+
     def toFeature(self):
         attributes = {}
         for k in self.c.keys():
             k = k.encode('ascii')
-            if k != '${idColName}' and k != '${geomColName}':
+            if k != '_mf_fid' and k != '_mf_geom':
                 attributes[k] = self.__dict__[k]
-        return Feature(id=self.${idColName}, geometry=self.${geomColName},
-            **attributes)
+        return Feature(id=self._mf_fid, geometry=self._mf_geom, **attributes)
 
 mapper(${modelClass}, ${modelTabObj})

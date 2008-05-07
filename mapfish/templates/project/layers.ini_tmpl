@@ -4,6 +4,7 @@
 #
 # [users]
 # singular=user
+# plural=users
 # db=dbname
 # table=users
 # epsg=4326
