@@ -33,7 +33,7 @@ class Search:
         self.idColumn = idColumn
         self.geomColumn = geomColumn
         self.epsg = epsg
-        self.units = units
+        self.units = units # currently unused
         self.limit = None
     
     def buildExpression(self, request):
@@ -56,7 +56,7 @@ class Search:
             epsg = request.params['epsg']
 
         # deal with lonlat query
-        if 'lon' in request.params and 'lat' in request.params and 'radius' in request.params:
+        if 'lon' in request.params and 'lat' in request.params and 'tolerance' in request.params:
             # define point from lonlat
             lon = float(request.params['lon'])
             lat = float(request.params['lat'])
@@ -67,13 +67,9 @@ class Search:
                 pgPoint = func.transform(pgPoint, self.epsg)
 
             # build query expression
-            radius = float(request.params['radius'])
-            if radius > 0:
-                if self.units == 'degrees':
-                    dist = func.distance_sphere(self.geomColumn, pgPoint)
-                else:
-                    dist = func.distance(self.geomColumn, pgPoint)
-                e = dist < radius
+            tolerance = float(request.params['tolerance'])
+            if tolerance > 0:
+                e = func.distance(self.geomColumn, pgPoint) < tolerance
             else:
                 e = func.within(pgPoint, self.geomColumn)
 
