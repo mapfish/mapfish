@@ -53,7 +53,7 @@ class Search:
         
         epsg = self.epsg
         if 'epsg' in request.params:
-            epsg = request.params['epsg']
+            epsg = int(request.params['epsg'])
 
         # deal with lonlat query
         if 'lon' in request.params and 'lat' in request.params and 'tolerance' in request.params:
@@ -63,15 +63,17 @@ class Search:
             point = Point(lon, lat)
             pgPoint = func.pointfromtext(point.wkt, epsg)
 
+            geom = self.geomColumn
+
             if epsg != self.epsg:
-                pgPoint = func.transform(pgPoint, self.epsg)
+                geom = func.transform(geom, epsg)
 
             # build query expression
             tolerance = float(request.params['tolerance'])
             if tolerance > 0:
-                e = func.distance(self.geomColumn, pgPoint) < tolerance
+                e = func.distance(geom, pgPoint) < tolerance
             else:
-                e = func.within(pgPoint, self.geomColumn)
+                e = func.within(pgPoint, geom)
 
             # update query expression
             if expr is not None:
