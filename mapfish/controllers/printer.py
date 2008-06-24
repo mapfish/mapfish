@@ -114,9 +114,9 @@ class PrinterController(WSGIController):
 
             self.start_response('200 OK', [
                     ('Content-Type','application/json; charset=utf-8')])
-            baseURL = self._getBaseURL()
+            getURL = self._urlForAction("create", "get", id = curId)
             return simplejson.dumps({
-                'getURL': baseURL + url_for(action = "get", id = curId)
+                'getURL': getURL
             })
         else:
             unlink(pdfFilename)
@@ -140,23 +140,28 @@ class PrinterController(WSGIController):
     def _setupConfig(self):
         self.jarPath = config['print.jar']
         self.configPath = config['print.config']
-        if config.has_key('print.url') and config['print.url']!='':
-            #we cannot trust the URL from the request to get the hostname (proxy)
-            self.url = config['print.url']
-        else:
-            self.url = None
 
-    def _getBaseURL(self):
-        if self.url:
-            return self.url
-        else:
-            return "http://" + request.host
+    def _urlForAction(self, fromAction, actionName, id = None):
+        """
+        We cannot trust the URL from the request to get the hostname (proxy).
+        This method is returning the base URL for accessing the different
+        actions of this controller.
+        """
+        actionUrl = url_for(action = actionName, id = id)
+        if request.params.has_key('url'):
+            fullUrl = request.params['url'].encode('utf8')
+            myUrl = url_for(action = fromAction)
+            if fullUrl == myUrl[1:]:  # support for very short relative URLs
+                return actionUrl[1:]
+            if fullUrl.endswith(myUrl):
+                return fullUrl[0:-len(myUrl)] + actionUrl
+            log.warn("Cannot guess the base URL for " + fullUrl + " (action=" + myUrl + ")")
+        return request.scheme + "://" + request.host + actionUrl
 
     def _addURLs(self, json):
         expr = re.compile('}$')
-        baseURL = self._getBaseURL()
-        printURL = simplejson.dumps(baseURL + url_for(action = "doPrint"))
-        createURL = simplejson.dumps(baseURL + url_for(action = "create")) 
+        printURL = simplejson.dumps(self._urlForAction("info", "doPrint"))
+        createURL = simplejson.dumps(self._urlForAction("info", "create"))
         return expr.sub(',"printURL":' + printURL + ',' +
                         '"createURL":' + createURL + '}', json)
 
