@@ -17,23 +17,11 @@
 # along with MapFish.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from pylons import config
+__all__ = ['comparison', 'featureid', 'logical', 'spatial']
 
-from sqlalchemy import Column, MetaData, Table, types
-from sqlalchemy.orm import mapper
+class Filter(object):
+    def __init__(self):
+        raise NotImplementedError('Filter cannot be instantiated')
 
-from mapfish.sqlalchemygeom import Geometry
-from mapfish.sqlalchemygeom import GeometryTableMixIn
-
-${modelTabObj} = Table(
-    '${table}',
-    MetaData(config['pylons.g'].sa_${db}_engine),
-    Column('${geomColName}', Geometry(${epsg})),
-    autoload=True)
-
-class ${modelClass}(GeometryTableMixIn):
-    # for GeometryTableMixIn to do its job the __table__ property
-    # must be set here
-    __table__ = ${modelTabObj}
-
-mapper(${modelClass}, ${modelTabObj})
+    def to_sql_expr(self):
+        raise NotImplementedError('to_sql_expr must be implemented')

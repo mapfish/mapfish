@@ -17,23 +17,24 @@
 # along with MapFish.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from pylons import config
+from mapfish.lib.filters import Filter
 
-from sqlalchemy import Column, MetaData, Table, types
-from sqlalchemy.orm import mapper
+class FeatureId(Filter):
+    def __init__(self, id_column, value):
+        """Create a feature id filter.
 
-from mapfish.sqlalchemygeom import Geometry
-from mapfish.sqlalchemygeom import GeometryTableMixIn
+          id_column 
+              the Column object corresponding to the id column.
 
-${modelTabObj} = Table(
-    '${table}',
-    MetaData(config['pylons.g'].sa_${db}_engine),
-    Column('${geomColName}', Geometry(${epsg})),
-    autoload=True)
+          value
+              this filter's value
+        """
+        self.id_column = id_column
+        self.value = value
 
-class ${modelClass}(GeometryTableMixIn):
-    # for GeometryTableMixIn to do its job the __table__ property
-    # must be set here
-    __table__ = ${modelTabObj}
+    def to_sql_expr(self):
+        """Return the SQLAlchemy SQL expression corresponding to that filter.
+        """
+        expr = self.id_column == self.value
+        return expr
 
-mapper(${modelClass}, ${modelTabObj})

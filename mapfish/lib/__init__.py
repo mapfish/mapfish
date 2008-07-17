@@ -16,24 +16,3 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with MapFish.  If not, see <http://www.gnu.org/licenses/>.
 #
-
-from pylons import config
-
-from sqlalchemy import Column, MetaData, Table, types
-from sqlalchemy.orm import mapper
-
-from mapfish.sqlalchemygeom import Geometry
-from mapfish.sqlalchemygeom import GeometryTableMixIn
-
-${modelTabObj} = Table(
-    '${table}',
-    MetaData(config['pylons.g'].sa_${db}_engine),
-    Column('${geomColName}', Geometry(${epsg})),
-    autoload=True)
-
-class ${modelClass}(GeometryTableMixIn):
-    # for GeometryTableMixIn to do its job the __table__ property
-    # must be set here
-    __table__ = ${modelTabObj}
-
-mapper(${modelClass}, ${modelTabObj})
