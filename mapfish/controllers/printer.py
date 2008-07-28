@@ -49,7 +49,7 @@ log = logging.getLogger(__name__)
 class PrinterController(WSGIController):
     TEMP_FILE_PREFIX = "mfPrintTempFile"
     TEMP_FILE_SUFFIX = ".pdf"
-    TEMP_FILE_PURGE_SECONDS = 60
+    TEMP_FILE_PURGE_SECONDS = 600
 
     def __init__(self):
         WSGIController.__init__(self)
@@ -97,7 +97,7 @@ class PrinterController(WSGIController):
         ret = exe.wait()
         if ret == 0:
             self.start_response('200 OK', [
-                    ('Content-Type','application/x-pdf')])
+                    ('Content-Type','application/pdf')])
             return result
         else:
             self.start_response('500 Java error', [
@@ -151,10 +151,13 @@ class PrinterController(WSGIController):
         """
         name = gettempdir() + sep + self.TEMP_FILE_PREFIX + id + self.TEMP_FILE_SUFFIX
 
-        response.headers['Content-Type'] = 'application/x-pdf'
         response.headers['Content-Length'] = getsize(name)
+        response.headers['Content-Type'] = 'application/pdf'
+        response.headers['Content-Disposition'] = 'attachment; filename='+id+'.pdf'
+        response.headers['Pragma'] = 'public'
+        response.headers['Expires'] = '0'
+        response.headers['Cache-Control'] = 'private'
         response.content = FileIterable(name)
-        return
 
     def _setupConfig(self):
         self.jarPath = config['print.jar']
@@ -224,11 +227,11 @@ class FileIterator(object):
          return self
      def next(self):
          if self.length is not None and self.length <= 0:
-             unlink(self.filename)
+             #unlink(self.filename)
              raise StopIteration
          chunk = self.fileobj.read(self.chunk_size)
          if not chunk:
-             unlink(self.filename)
+             #unlink(self.filename)
              raise StopIteration
          if self.length is not None:
              self.length -= len(chunk)
