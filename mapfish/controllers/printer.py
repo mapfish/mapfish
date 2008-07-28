@@ -76,9 +76,9 @@ class PrinterController(WSGIController):
             else:
                 return result
         else:
-            self.start_response('500 Java error '+ret, [
+            self.start_response('500 Java error', [
                     ('Content-Type','text/plain; charset=utf-8')])
-            return "ERROR\n\n" + error
+            return "ERROR(" + str(ret) + ")\n\n" + error
 
     def doPrint(self):
         """
