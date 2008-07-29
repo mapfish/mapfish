@@ -91,9 +91,9 @@ class Protocol(object):
             instances of the mapped class. """
         if filter:
             filter = filter.to_sql_expr()
-
-        return self.Session.query(self.mapped_class).from_statement(
-            select([self.mapped_class.__table__], filter).limit(limit)).all()
+        # 0 indicates the offset and is mandatory for SA to create the limit
+        # in the SQL
+        return self.Session.query(self.mapped_class).filter(filter)[0:limit]
 
     def _encode(self, objects):
         """ Return a GeoJSON representation of the passed objects. """
