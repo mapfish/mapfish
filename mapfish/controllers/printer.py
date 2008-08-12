@@ -60,7 +60,7 @@ class PrinterController(WSGIController):
         To get (in JSON) the information about the available formats and CO.
         """
         cmd = ['java', '-cp', self.jarPath, 'org.mapfish.print.ShellMapPrinter',
-               '--config=' + self.configPath, '--clientConfig', '--verbose=0']
+               '--config=' + self.configPath, '--clientConfig', '--verbose='+_getJavaLogLevel()]
         exe = Popen(cmd, stdout = PIPE, stderr = PIPE)
         result = exe.stdout.read()
         error = exe.stderr.read()
@@ -85,7 +85,7 @@ class PrinterController(WSGIController):
         All in one method: creates and returns the PDF to the client.
         """
         cmd = ['java', '-cp', self.jarPath, 'org.mapfish.print.ShellMapPrinter',
-             '--config=' + self.configPath, '--verbose=0']
+             '--config=' + self.configPath, '--verbose='+_getJavaLogLevel()]
         exe = Popen(cmd, stdin = PIPE, stdout = PIPE, stderr = PIPE)
         spec = request.params['spec'].encode('utf8')
         exe.stdin.write(spec)
@@ -118,7 +118,7 @@ class PrinterController(WSGIController):
                '-cp', self.jarPath,
                'org.mapfish.print.ShellMapPrinter',
                '--config=' + self.configPath,
-               '--verbose=0',
+               '--verbose='+_getJavaLogLevel(),
                '--output=' + pdfFilename]
         exe = Popen(cmd, stdin = PIPE, stderr = PIPE)
         spec = request.environ['wsgi.input'].read()
@@ -239,3 +239,16 @@ class FileIterator(object):
                  # Chop off the extra:
                  chunk = chunk[:self.length]
          return chunk
+
+def _getJavaLogLevel():
+    """
+    Convert the python log level into a value to be used with the java
+    "--verbose" parameter
+    """
+    level = log.getEffectiveLevel()
+    if level >= 30:
+        return '0'
+    elif level >= 20:
+        return '1'
+    else:
+        return '2'    
