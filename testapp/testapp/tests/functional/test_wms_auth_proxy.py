@@ -37,7 +37,6 @@ class TestWmsAuthProxyController(TestController):
         # url_for() is not working for "<url>/*more syntax. So hardcoding is
         # needed
         url = "/wms_auth_proxy/%s/wms?layers=%s" % (alias, ",".join(layers))
-        print "UURRLL", url
         allowed = True
         content = ""
         try:

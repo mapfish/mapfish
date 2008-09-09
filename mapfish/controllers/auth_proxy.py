@@ -122,7 +122,6 @@ class AuthProxyController(WSGIController):
             full_url += query
 
         # build the request with its headers
-        print "full_url", full_url
         req = urllib2.Request(url=full_url)
         for header in request.headers:
             if header.lower() == "host":
