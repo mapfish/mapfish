@@ -78,19 +78,23 @@ class Geometry(TypeEngine):
     def compare_values(self, x, y):
         return x.equals(y)
 
-    def convert_bind_param(self, value, engine):
+    def bind_processor(self, dialect):
         """convert value from a geometry object to database"""
-        if value is None:
-            return None
-        else:
-            return "SRID=%s;%s" % (self.srid, value.wkb.encode('hex'))
+        def convert(value):
+            if value is None:
+                return None
+            else:
+                return "SRID=%s;%s" % (self.srid, value.wkb.encode('hex'))
+        return convert
 
-    def convert_result_value(self, value, engine):
+    def result_processor(self, dialect):
         """convert value from database to a geometry object"""
-        if value is None:
-            return None
-        else:
-            return loads(value.decode('hex'))
+        def convert(value):
+            if value is None:
+                return None
+            else:
+                return loads(value.decode('hex'))
+        return convert
 
 class GeometryTableMixIn(object):
     exported_keys = None
