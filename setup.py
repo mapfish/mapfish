@@ -25,12 +25,12 @@ except ImportError:
     from setuptools import setup, find_packages
 
 setup(name                 = 'MapFish',
-      version              = '0.3',
+      version              = '1.0dev',
       license              = 'LGPLv3',
-      install_requires     = ['SQLAlchemy >= 0.5.0beta2',
+      install_requires     = ['SQLAlchemy == 0.5.0rc1',
                               'Pylons == 0.9.6.2',
-                              'Shapely >= 1.0a7',
-                              'GeoJSON >= 1.0a3'],
+                              'Shapely == 1.0.7',
+                              'geojson == 1.0'],
       zip_safe             = False,
       include_package_data = True,
       packages             = find_packages(),
