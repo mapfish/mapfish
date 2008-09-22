@@ -24,7 +24,7 @@ except ImportError:
     use_setuptools()
     from setuptools import setup, find_packages
 
-setup(name                 = 'MapFish',
+setup(name                 = 'mapfish',
       version              = '1.0dev',
       license              = 'LGPLv3',
       install_requires     = ['SQLAlchemy == 0.5.0rc1',
