@@ -86,14 +86,14 @@ class Protocol(object):
         self.mapped_class = mapped_class
         self.readonly = readonly
 
-    def _query(self, filter=None, limit=None):
+    def _query(self, filter=None, limit=None, offset=None):
         """ Query the database using the passed filter and return
             instances of the mapped class. """
         if filter:
             filter = filter.to_sql_expr()
-        # 0 indicates the offset and is mandatory for SA to create the limit
-        # in the SQL
-        return self.Session.query(self.mapped_class).filter(filter)[0:limit]
+        if limit is not None and offset is not None:
+            limit = limit + offset
+        return self.Session.query(self.mapped_class).filter(filter)[offset:limit]
 
     def _encode(self, objects):
         """ Return a GeoJSON representation of the passed objects. """
@@ -107,6 +107,14 @@ class Protocol(object):
             else:
                 return dumps(objects.toFeature())
 
+    def _get_default_filter(self, request):
+        """ Return a MapFish default filter. """
+        return create_default_filter(
+            request,
+            self.mapped_class.primary_key_column(),
+            self.mapped_class.geometry_column()
+        )
+
     def index(self, request, response, format='json', filter=None):
         """ Build a query based on the filter and the request
         params, send the query to the database, and return a
@@ -118,18 +126,27 @@ class Protocol(object):
             return
 
         limit = None
+        offset = 0
         if 'maxfeatures' in request.params:
             limit = int(request.params['maxfeatures'])
+        if 'limit' in request.params:
+            limit = int(request.params['limit'])
+        if 'offset' in request.params:
+            offset = int(request.params['offset'])
 
         if not filter:
             # create MapFish default filter
-            filter = create_default_filter(
-                request,
-                self.mapped_class.primary_key_column(),
-                self.mapped_class.geometry_column()
-            )
+            filter = self._get_default_filter(request)
 
-        return self._encode(self._query(filter, limit))
+        return self._encode(self._query(filter, limit, offset))
+
+    def count(self, request, filter=None):
+        """ Return the number of records matching the given filter. """
+        if not filter:
+            filter = self._get_default_filter(request)
+        if filter:
+            filter = filter.to_sql_expr()
+        return self.Session.query(self.mapped_class).filter(filter).count()
 
     def show(self, request, response, id, format='json'):
         """ Build a query based on the id argument, send the query
