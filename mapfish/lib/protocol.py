@@ -126,7 +126,7 @@ class Protocol(object):
             return
 
         limit = None
-        offset = 0
+        offset = None
         if 'maxfeatures' in request.params:
             limit = int(request.params['maxfeatures'])
         if 'limit' in request.params:
