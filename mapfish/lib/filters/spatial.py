@@ -120,7 +120,7 @@ class Spatial(Filter):
         if epsg != self.geom_column.type.srid:
             geom = func.transform(geom, epsg)
 
-        if tolerance > 0:
+        if tolerance is not None and tolerance > 0:
             e = func.distance(geom, pg_point) < tolerance
         else:
             e = func.within(pg_point, geom)

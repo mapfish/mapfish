@@ -66,14 +66,17 @@ def create_default_filter(request, id_column, geom_column):
             box=request.params['box'].split(','),
             epsg=epsg
         )
-    elif 'lon' and 'lat' and 'tolerance' in request.params:
+    elif 'lon' and 'lat' in request.params:
         # within filter
+        tolerance = None
+        if 'tolerance' in request.params:
+            tolerance = float(request.params['tolerance'])
         filter = Spatial(
             Spatial.WITHIN,
             geom_column,
             lon=float(request.params['lon']),
             lat=float(request.params['lat']),
-            tolerance=float(request.params['tolerance']),
+            tolerance=tolerance,
             epsg=epsg
         )
 
