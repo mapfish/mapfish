@@ -1,18 +1,18 @@
-# 
+#
 # Copyright (C) 2007-2008  Camptocamp
-#  
+#
 # This file is part of MapFish Server
-#  
+#
 # MapFish Server is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-#  
+#
 # MapFish Server is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
-#  
+#
 # You should have received a copy of the GNU Lesser General Public License
 # along with MapFish Server.  If not, see <http://www.gnu.org/licenses/>.
 #
@@ -61,6 +61,7 @@ class PrinterController(WSGIController):
         """
         cmd = ['java', '-cp', self.jarPath, 'org.mapfish.print.ShellMapPrinter',
                '--config=' + self.configPath, '--clientConfig', '--verbose='+_getJavaLogLevel()]
+        self._addCommonJavaParams(cmd)
         exe = Popen(cmd, stdout = PIPE, stderr = PIPE)
         result = exe.stdout.read()
         error = exe.stderr.read()
@@ -86,6 +87,7 @@ class PrinterController(WSGIController):
         """
         cmd = ['java', '-cp', self.jarPath, 'org.mapfish.print.ShellMapPrinter',
              '--config=' + self.configPath, '--verbose='+_getJavaLogLevel()]
+        self._addCommonJavaParams(cmd)
         exe = Popen(cmd, stdin = PIPE, stdout = PIPE, stderr = PIPE)
         spec = request.params['spec'].encode('utf8')
         exe.stdin.write(spec)
@@ -120,6 +122,7 @@ class PrinterController(WSGIController):
                '--config=' + self.configPath,
                '--verbose='+_getJavaLogLevel(),
                '--output=' + pdfFilename]
+        self._addCommonJavaParams(cmd)
         exe = Popen(cmd, stdin = PIPE, stderr = PIPE)
         spec = request.environ['wsgi.input'].read()
         exe.stdin.write(spec)
@@ -158,6 +161,27 @@ class PrinterController(WSGIController):
         response.headers['Expires'] = '0'
         response.headers['Cache-Control'] = 'private'
         response.content = FileIterable(name)
+
+    def _addCommonJavaParams(self, cmd):
+        """
+        Adds the java system properties for the locale. Gets it from the request
+        parameter "locale" or try to guess it from the "Accept-Language" HTTP
+        header parameter.
+        """
+        cmd.insert(1, "-Djava.awt.headless=true")    #allows to run the process without X11
+        if request.params.has_key('locale'):
+            locale = request.params['locale']
+        else:
+            if request.headers.has_key('Accept-Language'):
+                locale = request.headers['Accept-Language'].split(',')[0]
+            else:
+                return
+        splitted = re.split("[-_]", locale)
+        language = splitted[0]
+        cmd.insert(1, "-Duser.language="+language)
+        if len(splitted)>1:
+            country = splitted[1]
+            cmd.insert(1, "-Duser.country="+country)
 
     def _setupConfig(self):
         self.jarPath = config['print.jar']
@@ -211,7 +235,7 @@ class FileIterable(object):
          return FileIterator(self.filename, self.start, self.stop)
      def app_iter_range(self, start, stop):
          return self.__class__(self.filename, start, stop)
-        
+
 class FileIterator(object):
      chunk_size = 4096
      def __init__(self, filename, start, stop):
@@ -251,4 +275,4 @@ def _getJavaLogLevel():
     elif level >= 20:
         return '1'
     else:
-        return '2'    
+        return '2'
