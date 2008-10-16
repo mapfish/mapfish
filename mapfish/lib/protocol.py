@@ -24,7 +24,7 @@ import decimal
 
 from shapely.geometry import asShape
 
-from sqlalchemy.sql import select
+from sqlalchemy.sql import select, asc, desc
 
 from geojson import dumps as _dumps, loads, Feature, FeatureCollection, GeoJSON
 from geojson.codec import PyGFPEncoder
@@ -89,14 +89,18 @@ class Protocol(object):
         self.mapped_class = mapped_class
         self.readonly = readonly
 
-    def _query(self, filter=None, limit=None, offset=None):
+    def _query(self, filter=None, limit=None, offset=None, order_by=None):
         """ Query the database using the passed filter and return
             instances of the mapped class. """
         if filter:
             filter = filter.to_sql_expr()
         if limit is not None and offset is not None:
             limit = limit + offset
-        return self.Session.query(self.mapped_class).filter(filter)[offset:limit]
+
+        if order_by:
+            return self.Session.query(self.mapped_class).filter(filter).order_by(order_by)[offset:limit]
+        else:
+            return self.Session.query(self.mapped_class).filter(filter)[offset:limit]
 
     def _encode(self, objects):
         """ Return a GeoJSON representation of the passed objects. """
@@ -118,6 +122,23 @@ class Protocol(object):
             self.mapped_class.geometry_column()
         )
 
+    def _get_order_by(self, request):
+        """ Return an SA order_by """
+        column_name = None
+        if 'sort' in request.params:
+            column_name = request.params['sort']
+        elif 'order_by' in request.params:
+            column_name = request.params['order_by']
+            
+        if column_name and column_name in self.mapped_class.__table__.c:
+            column = self.mapped_class.__table__.c[column_name]
+            if 'dir' in request.params and request.params['dir'].upper() == 'DESC':
+                return desc(column)
+            else: 
+                return asc(column)
+        else:
+            return None
+
     def index(self, request, response, format='json', filter=None):
         """ Build a query based on the filter and the request
         params, send the query to the database, and return a
@@ -130,6 +151,7 @@ class Protocol(object):
 
         limit = None
         offset = None
+
         if 'maxfeatures' in request.params:
             limit = int(request.params['maxfeatures'])
         if 'limit' in request.params:
@@ -141,7 +163,9 @@ class Protocol(object):
             # create MapFish default filter
             filter = self._get_default_filter(request)
 
-        return self._encode(self._query(filter, limit, offset))
+        order_by = self._get_order_by(request)
+            
+        return self._encode(self._query(filter, limit, offset, order_by))
 
     def count(self, request, filter=None):
         """ Return the number of records matching the given filter. """
