@@ -173,7 +173,7 @@ class Protocol(object):
             filter = self._get_default_filter(request)
         if filter:
             filter = filter.to_sql_expr()
-        return self.Session.query(self.mapped_class).filter(filter).count()
+        return str(self.Session.query(self.mapped_class).filter(filter).count())
 
     def show(self, request, response, id, format='json'):
         """ Build a query based on the id argument, send the query
