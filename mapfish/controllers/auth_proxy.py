@@ -1,4 +1,5 @@
 from pylons import request, response
+from pylons.decorators import jsonify 
 from pylons.controllers import WSGIController
 
 from authkit.authorize.pylons_adaptors import authorized
@@ -82,7 +83,8 @@ class AuthProxyController(WSGIController):
         self.alias_to_layers = dict(((layer.alias, layer) for layer in layers))
         self.layers = layers
 
-    def _get_permissions(self):
+    @jsonify
+    def get_permissions(self):
         return {
             "layer": [l.get_permissions() for l in self.layers]
         }
