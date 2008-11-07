@@ -20,7 +20,7 @@
 import logging
 log = logging.getLogger(__name__)
 
-import decimal
+import decimal, datetime
 
 from shapely.geometry import asShape
 
@@ -33,12 +33,12 @@ from mapfish.lib.filters.spatial import Spatial
 
 class MapFishJSONEncoder(PyGFPEncoder):
     """ SQLAlchemy's Reflecting Tables mechanism uses decimal.Decimal
-    for numeric columns. simplejson does not know how to deal with
-    objects of that type. This class provides a simple encoder that
-    can deal with decimal.Decimal objects. """
+    for numeric columns and datetime.date for dates. simplejson does
+    not know how to deal with objects of those types. This class provides
+    a simple encoder that can deal with these kinds of objects. """
 
     def default(self, obj):
-        if isinstance(obj, decimal.Decimal):
+        if isinstance(obj, (decimal.Decimal, datetime.date, datetime.datetime)):
             return str(obj)
         return PyGFPEncoder.default(self, obj)
 
@@ -84,10 +84,16 @@ def create_default_filter(request, id_column, geom_column):
 
 class Protocol(object):
 
-    def __init__(self, Session, mapped_class, readonly=False):
+    def __init__(self, Session, mapped_class, readonly=False, **kwargs):
         self.Session = Session
         self.mapped_class = mapped_class
         self.readonly = readonly
+        self.before_create = None
+        if kwargs.has_key('before_create'):
+            self.before_create = kwargs['before_create']
+        self.before_update = None
+        if kwargs.has_key('before_update'):
+            self.before_update = kwargs['before_update']
 
     def _query(self, filter=None, limit=None, offset=None, order_by=None):
         """ Query the database using the passed filter and return
@@ -203,6 +209,8 @@ class Protocol(object):
         for feature in collection.features:
             create = False
             obj = None
+            if self.before_create is not None:
+                self.before_create(request, feature)
             if isinstance(feature.id, int):
                 obj = self.Session.query(self.mapped_class).get(feature.id)
             if obj is None:
@@ -236,6 +244,8 @@ class Protocol(object):
         if not isinstance(feature, Feature):
             response.status_code = 400
             return response
+        if self.before_update is not None:
+            self.before_update(request, feature)
         obj.geometry = asShape(feature.geometry)
         for key in feature.properties:
             obj[key] = feature.properties[key]
