@@ -167,8 +167,14 @@ class PrinterController(WSGIController):
         Adds the java system properties for the locale. Gets it from the request
         parameter "locale" or try to guess it from the "Accept-Language" HTTP
         header parameter.
+        Adds as well the referer.
         """
-        cmd.insert(1, "-Djava.awt.headless=true")    #allows to run the process without X11
+        if request.headers.has_key('REFERER'):
+            cmd.append("--referer="+request.headers['REFERER'])
+
+        #allows to run the process without X11
+        cmd.insert(1, "-Djava.awt.headless=true")
+
         if request.params.has_key('locale'):
             locale = request.params['locale']
         else:
