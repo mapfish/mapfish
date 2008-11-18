@@ -89,11 +89,13 @@ class Spatial(Filter):
         if self.epsg is not None:
             epsg = self.epsg
 
+        coords = map(float, coords)
+
         # define polygon from box
-        point_a = (float(coords[0]), float(coords[1]))
-        point_b = (float(coords[0]), float(coords[3]))
-        point_c = (float(coords[2]), float(coords[3]))
-        point_d = (float(coords[2]), float(coords[1]))
+        point_a = (coords[0], coords[1])
+        point_b = (coords[0], coords[3])
+        point_c = (coords[2], coords[3])
+        point_d = (coords[2], coords[1])
         point_e = point_a
         coords = (point_a, point_b, point_c, point_d, point_e)
         poly = Polygon(coords)
@@ -102,7 +104,7 @@ class Spatial(Filter):
         if epsg != self.geom_column.type.srid:
             pg_poly = func.transform(pg_poly, epsg)
 
-        return self.geom_column.op('&&')(pg_poly)
+        return func.st_intersects(self.geom_column, pg_poly)
 
     def __to_sql_expr_within(self):
         lon = self.values['lon']
