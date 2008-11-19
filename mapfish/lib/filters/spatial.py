@@ -104,7 +104,9 @@ class Spatial(Filter):
         if epsg != self.geom_column.type.srid:
             pg_poly = func.transform(pg_poly, epsg)
 
-        return func.st_intersects(self.geom_column, pg_poly)
+        # TODO : use st_intersects when only postgis 1.3 supported
+        return self.geom_column.op('&&')(pg_poly) and \
+            func.intersects(self.geom_column, pg_poly)
 
     def __to_sql_expr_within(self):
         lon = self.values['lon']
@@ -121,9 +123,11 @@ class Spatial(Filter):
         geom = self.geom_column
         if epsg != self.geom_column.type.srid:
             geom = func.transform(geom, epsg)
-
+        
+        # TODO : use st_dwithin when only Postgis 1.3 supported
         if tolerance is not None and tolerance > 0:
-            e = func.distance(geom, pg_point) < tolerance
+            e = func.expand(geom, tolerance).op('&&')(pg_point) and \
+                (func.distance(geom, pg_point) < tolerance)
         else:
             e = func.within(pg_point, geom)
 
