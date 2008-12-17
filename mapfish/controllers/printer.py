@@ -69,16 +69,16 @@ class PrinterController(WSGIController):
             log.error(error)
         ret = exe.wait()
         if ret == 0:
-            self.start_response('200 OK', [
-                    ('Content-Type','application/json; charset=utf-8')])
+            response.status = 200
+            response.headers['Content-Type'] = 'application/json; charset=utf-8'
             result = self._addURLs(result)
             if request.params.has_key('var'):
                 return 'var ' + request.params['var'].encode('utf8') + '=' + result + ';'
             else:
                 return result
         else:
-            self.start_response('500 Java error', [
-                    ('Content-Type','text/plain; charset=utf-8')])
+            response.status = 500
+            response.headers['Content-Type'] = 'text/plain; charset=utf-8'
             return "ERROR(" + str(ret) + ")\n\n" + error
 
     def doPrint(self):
@@ -98,13 +98,12 @@ class PrinterController(WSGIController):
             log.error(error)
         ret = exe.wait()
         if ret == 0:
-            self.start_response('200 OK', [
-                    ('Content-Type','application/pdf')])
+            response.status = 200
+            response.headers['Content-Type'] = 'application/pdf'
             return result
         else:
-            self.start_response('500 Java error', [
-                    ('Content-Type','text/plain; charset=utf-8')
-            ])
+            response.status = 500
+            response.headers['Content-Type'] = 'text/plain; charset=utf-8'
             return "ERROR(" + str(ret) + ")\n\nspec=" + spec + "\n\n" + error
 
     def create(self):
@@ -134,17 +133,17 @@ class PrinterController(WSGIController):
         if ret == 0:
             curId = basename(pdfFilename)[len(self.TEMP_FILE_PREFIX):-len(self.TEMP_FILE_SUFFIX)]
 
-            self.start_response('200 OK', [
-                    ('Content-Type','application/json; charset=utf-8')])
+            response.status = 200
+            response.headers['Content-Type'] = 'application/json; charset=utf-8'
             getURL = self._urlForAction("create", "get", id = curId)
             return simplejson.dumps({
-                'getURL': getURL
+                'getURL': getURL,
+                'messages': error
             })
         else:
             unlink(pdfFilename)
-            self.start_response('500 Java error', [
-                    ('Content-Type','text/plain; charset=utf-8')
-            ])
+            response.status = 500
+            response.headers['Content-Type'] = 'text/plain; charset=utf-8'
             return "ERROR(" + str(ret) + ")\n\nspec=" + spec + "\n\n" + error
         return request
 
@@ -154,6 +153,7 @@ class PrinterController(WSGIController):
         """
         name = gettempdir() + sep + self.TEMP_FILE_PREFIX + id + self.TEMP_FILE_SUFFIX
 
+        response.status = 200
         response.headers['Content-Length'] = getsize(name)
         response.headers['Content-Type'] = 'application/pdf'
         response.headers['Content-Disposition'] = 'attachment; filename='+id+'.pdf'
