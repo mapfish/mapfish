@@ -96,17 +96,15 @@ class Protocol(object):
             self.before_update = kwargs['before_update']
 
     def _query(self, filter=None, limit=None, offset=None, order_by=None):
-        """ Query the database using the passed filter and return
-            instances of the mapped class. """
+        """ Query the database using the passed limit, offset and filter,
+            and return instances of the mapped class. """
         if filter:
             filter = filter.to_sql_expr()
-        if limit is not None and offset is not None:
-            limit = limit + offset
-
+        query = self.Session.query(self.mapped_class).filter(filter)
         if order_by:
-            return self.Session.query(self.mapped_class).filter(filter).order_by(order_by)[offset:limit]
-        else:
-            return self.Session.query(self.mapped_class).filter(filter)[offset:limit]
+            query = query.order_by(order_by)
+        query = query.limit(limit).offset(offset)
+        return query.all()
 
     def _encode(self, objects):
         """ Return a GeoJSON representation of the passed objects. """
