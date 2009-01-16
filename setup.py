@@ -25,7 +25,7 @@ except ImportError:
     from setuptools import setup, find_packages
 
 setup(name                 = 'mapfish',
-      version              = '1.1',
+      version              = '1.0dev',
       license              = 'LGPLv3',
       install_requires     = ['SQLAlchemy>=0.5.0rc1,<=0.5.99',
                               'Pylons>=0.9.6.2,<=0.9.7.99',
