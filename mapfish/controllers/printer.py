@@ -27,7 +27,7 @@ from tempfile import NamedTemporaryFile, gettempdir
 import re
 import simplejson
 
-from routes.util import url_for
+from routes import url_for
 from pylons.controllers import WSGIController
 from pylons import config, request, response, session
 

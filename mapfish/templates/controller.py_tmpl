@@ -1,33 +1,18 @@
-# 
-# Copyright (C) 2007-2008  Camptocamp
-#  
-# This file is part of MapFish Server
-#  
-# MapFish Server is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#  
-# MapFish Server is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Lesser General Public License for more details.
-#  
-# You should have received a copy of the GNU Lesser General Public License
-# along with MapFish Server.  If not, see <http://www.gnu.org/licenses/>.
-#
+from pylons import request, response, session, tmpl_context as c
+from pylons.controllers.util import abort, redirect_to
 
-from ${basePkg}.lib.base import *
-from ${basePkg}.model.${modName} import ${modelClass}
+from {{basePkg}}.lib.base import BaseController
+from {{basePkg}}.model.{{modName}} import {{modelClass}}
+from {{basePkg}}.model.meta import Session
 
 from mapfish.lib.filters import *
 from mapfish.lib.protocol import Protocol, create_default_filter
 
-class ${contrClass}Controller(BaseController):
+class {{contrClass}}Controller(BaseController):
     readonly = False # if set to True, only GET is supported
 
     def __init__(self):
-        self.protocol = Protocol(model.Session, ${modelClass}, self.readonly)
+        self.protocol = Protocol(Session, {{modelClass}}, self.readonly)
 
     def index(self, format='json'):
         """GET /: return all features."""
@@ -44,12 +29,12 @@ class ${contrClass}Controller(BaseController):
         #
         # default_filter = create_default_filter(
         #     request,
-        #     ${modelClass}.primary_key_column(),
-        #     ${modelClass}.geometry_column()
+        #     {{modelClass}}.primary_key_column(),
+        #     {{modelClass}}.geometry_column()
         # )
         # compare_filter = comparison.Comparison(
         #     comparison.Comparison.ILIKE,
-        #     ${modelClass}.mycolumnname,
+        #     {{modelClass}}.mycolumnname,
         #     value=myvalue
         # )
         # filter = logical.Logical(logical.Logical.AND, [default_filter, compare_filter])

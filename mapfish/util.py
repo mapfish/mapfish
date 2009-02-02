@@ -1,8 +1,10 @@
-from paste.script import templates
+from paste.script.templates import Template
+from tempita import paste_script_template_renderer
 
-class MapFishTemplate(templates.Template):
+class MapFishTemplate(Template):
     egg_plugins = ['MapFish']
-    summary = 'Template for creating a basic MapFish project'
+    summary = 'MapFish application template'
+    template_renderer=staticmethod(paste_script_template_renderer)
     required_templates = ['pylons']
     _template_dir = 'templates/project'
     overwrite = True

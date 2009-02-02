@@ -1,6 +1,6 @@
-from ${basePkg}.tests import *
+from {{basePkg}}.tests import *
 
-class Test${contrClass}Controller(TestController):
+class Test{{contrClass}}Controller(TestController):
     def test_index(self):
-        response = self.app.get(url_for(controller='${fullModName}'))
+        response = self.app.get(url_for(controller='{{fullModName}}'))
         # Test response...

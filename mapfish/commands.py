@@ -33,6 +33,7 @@ from ConfigParser import ConfigParser, NoOptionError
 
 from paste.script.command import Command, BadCommand
 from paste.script.filemaker import FileOp
+from tempita import paste_script_template_renderer
 
 import pylons.util as util
 
@@ -127,7 +128,6 @@ class MapFishControllerCommand(Command):
             singularName = config.get(name, 'singular')
             pluralName = config.get(name, 'plural')
             epsg = config.get(name, 'epsg')
-            units = config.get(name, 'units')
 
             # check the name isn't the same as the package
             basePkg = fileOp.find_dir('controllers', True)[0]
@@ -163,15 +163,16 @@ class MapFishControllerCommand(Command):
                  'modelClass': modelClass,
                  'modelTabObj': modelTabObj,
                  'basePkg': basePkg,
-                 'epsg': epsg,
-                 'units': units})
+                 'epsg': epsg})
             fileOp.copy_file(template='controller.py_tmpl',
                          dest=os.path.join('controllers', directory),
-                         filename=name)
+                         filename=name,
+                         template_renderer=paste_script_template_renderer)
             if not self.options.no_test:
                 fileOp.copy_file(template='test_controller.py_tmpl',
                              dest=os.path.join('tests', 'functional'),
-                             filename='test_' + testName)
+                             filename='test_' + testName,
+                             template_renderer=paste_script_template_renderer)
 
         except BadCommand, e:
             raise BadCommand('An error occurred. %s' % e)
@@ -228,12 +229,13 @@ class MapFishModelCommand(Command):
 
             # get layer parameters
             singularName = config.get(name, 'singular')
-            db = config.get(name, 'db')
             table = config.get(name, 'table')
             epsg = config.get(name, 'epsg')
-            idColType, idColName = \
-                config.get(name, 'idcolumn').split(':')[:2]
             geomColName = config.get(name, 'geomcolumn')
+            if config.has_option(name, 'schema'):
+                schema = config.get(name, 'schema')
+            else:
+                schema = None
 
             # check the name isn't the same as the package
             basePkg = fileOp.find_dir('controllers', True)[0]
@@ -254,15 +256,15 @@ class MapFishModelCommand(Command):
             fileOp.template_vars.update(
                 {'modelClass': modelClass,
                  'modelTabObj': modelTabObj,
-                 'db': db,
                  'table': table,
                  'epsg': epsg,
-                 'idColType': idColType,
-                 'idColName': idColName,
-                 'geomColName': geomColName})
+                 'geomColName': geomColName,
+                 'basePkg': basePkg,
+                 'schema': schema})
             fileOp.copy_file(template='model.py_tmpl',
                          dest=os.path.join('model', directory),
-                         filename=name)
+                         filename=name,
+                         template_renderer=paste_script_template_renderer)
 
         except BadCommand, e:
             raise BadCommand('An error occurred. %s' % e)
