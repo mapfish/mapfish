@@ -22,6 +22,8 @@ log = logging.getLogger(__name__)
 
 import decimal, datetime
 
+from pylons.controllers.util import abort
+
 from shapely.geometry import asShape
 
 from sqlalchemy.sql import select, asc, desc
@@ -150,8 +152,7 @@ class Protocol(object):
 
         # only json is supported
         if format != 'json':
-            response.status_code = 404
-            return
+            abort(404)
 
         limit = None
         offset = None
@@ -186,23 +187,24 @@ class Protocol(object):
 
         # only json is supported
         if format != 'json':
-            response.status_code = 404
-            return
+            abort(404)
 
-        return self._encode(self.Session.query(self.mapped_class).get(id))
+        obj = self.Session.query(self.mapped_class).get(id)
+        if obj is None:
+            abort(404)
+
+        return self._encode(obj)
 
     def create(self, request, response):
         """ Read the GeoJSON feature collection from the request body and
             create new objects in the database. """
         if self.readonly:
-            response.status_code = 403
-            return
+            abort(403)
         content = request.environ['wsgi.input'].read(int(request.environ['CONTENT_LENGTH']))
         factory = lambda ob: GeoJSON.to_instance(ob)
         collection = loads(content, object_hook=factory)
         if not isinstance(collection, FeatureCollection):
-            response.status_code = 400
-            return
+            abort(400)
         objects = []
         for feature in collection.features:
             create = False
@@ -221,7 +223,7 @@ class Protocol(object):
                 self.Session.save(obj)
             objects.append(obj)
         self.Session.commit()
-        response.status_code = 201
+        response.status = 201
         if len(objects) > 0:
             return dumps(FeatureCollection([o.toFeature() for o in objects]))
         return
@@ -230,38 +232,33 @@ class Protocol(object):
         """ Read the GeoJSON feature from the request body and update the
         corresponding object in the database. """
         if self.readonly:
-            response.status_code = 403
-            return
+            abort(403)
         obj = self.Session.query(self.mapped_class).get(id)
         if obj is None:
-            response.status_code = 404
-            return
+            abort(404)
         content = request.environ['wsgi.input'].read(int(request.environ['CONTENT_LENGTH']))
         factory = lambda ob: GeoJSON.to_instance(ob)
         feature = loads(content, object_hook=factory)
         if not isinstance(feature, Feature):
-            response.status_code = 400
-            return response
+            abort(400)
         if self.before_update is not None:
             self.before_update(request, feature)
         obj.geometry = asShape(feature.geometry)
         for key in feature.properties:
             obj[key] = feature.properties[key]
         self.Session.commit()
-        response.status_code = 201
+        response.status = 201
         return dumps(obj.toFeature())
 
     def delete(self, request, response, id):
         """ Remove the targetted feature from the database """
         if self.readonly:
-            response.status_code = 403
-            return
+            abort(403)
         obj = self.Session.query(self.mapped_class).get(id)
         if obj is None:
-            response.status_code = 404
-            return
+            abort(404)
         self.Session.delete(obj)
         self.Session.commit()
-        response.status_code = 204
+        response.status = 204
         return
 
