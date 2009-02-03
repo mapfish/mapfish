@@ -30,6 +30,9 @@ import simplejson
 from routes import url_for
 from pylons.controllers import WSGIController
 from pylons import config, request, response, session
+from pylons.controllers.util import forward
+
+from paste.fileapp import FileApp
 
 def addRoutes(map, baseUrl="print/", controller="printer"):
     """
@@ -152,15 +155,15 @@ class PrinterController(WSGIController):
         To get the PDF created previously.
         """
         name = gettempdir() + sep + self.TEMP_FILE_PREFIX + id + self.TEMP_FILE_SUFFIX
-
-        response.status = 200
-        response.headers['Content-Length'] = getsize(name)
-        response.headers['Content-Type'] = 'application/pdf'
-        response.headers['Content-Disposition'] = 'attachment; filename='+id+'.pdf'
-        response.headers['Pragma'] = 'public'
-        response.headers['Expires'] = '0'
-        response.headers['Cache-Control'] = 'private'
-        response.content = FileIterable(name)
+        headers = {
+            'Content-Length' : getsize(name),
+            'Content-Type' : 'application/pdf',
+            'Content-Disposition' : 'attachment; filename='+id+'.pdf',
+            'Pragma' : 'public',
+            'Expires' : '0',
+            'Cache-Control' : 'private'
+            }
+        return forward(FileApp(name, **headers))
 
     def _addCommonJavaParams(self, cmd):
         """
@@ -230,45 +233,6 @@ class PrinterController(WSGIController):
                     log.info("deleting leftover file :" + fullname + " (age=" + str(age) + "s)")
                     unlink(fullname)
 
-
-# taken here: http://pythonpaste.org/webob/file-example.html
-class FileIterable(object):
-     def __init__(self, filename, start = None, stop = None):
-         self.filename = filename
-         self.start = start
-         self.stop = stop
-     def __iter__(self):
-         return FileIterator(self.filename, self.start, self.stop)
-     def app_iter_range(self, start, stop):
-         return self.__class__(self.filename, start, stop)
-
-class FileIterator(object):
-     chunk_size = 4096
-     def __init__(self, filename, start, stop):
-         self.filename = filename
-         self.fileobj = open(self.filename, 'rb')
-         if start:
-             self.fileobj.seek(start)
-         if stop is not None:
-             self.length = stop - start
-         else:
-             self.length = None
-     def __iter__(self):
-         return self
-     def next(self):
-         if self.length is not None and self.length <= 0:
-             #unlink(self.filename)
-             raise StopIteration
-         chunk = self.fileobj.read(self.chunk_size)
-         if not chunk:
-             #unlink(self.filename)
-             raise StopIteration
-         if self.length is not None:
-             self.length -= len(chunk)
-             if self.length < 0:
-                 # Chop off the extra:
-                 chunk = chunk[:self.length]
-         return chunk
 
 def _getJavaLogLevel():
     """
