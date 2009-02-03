@@ -34,7 +34,7 @@ from pylons.controllers.util import forward
 
 from paste.fileapp import FileApp
 
-def addRoutes(map, baseUrl="print/", controller="printer"):
+def addRoutes(map, baseUrl="/print/", controller="printer"):
     """
     Add the pylons routes for the print module to the given map
     """
