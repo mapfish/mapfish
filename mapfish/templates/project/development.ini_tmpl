@@ -17,7 +17,7 @@ port = 5000
 
 [composite:main]
 use = egg:Paste#urlmap
-/ = main
+/ = pylons_app
 /mfbase = mfbase
 #/examples = examples
 
@@ -32,7 +32,7 @@ document_root = {{mapfishclientmfbasepath}}/
 #use = egg:Paste#static
 #document_root = /path/to/MapFish/client/examples/
 
-[app:main]
+[app:pylons_app]
 use = egg:{{project}}
 full_stack = true
 {{if google_app_engine}}
