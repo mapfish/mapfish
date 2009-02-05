@@ -1,4 +1,4 @@
-from paste.script.templates import Template
+from paste.script.templates import Template, var
 from tempita import paste_script_template_renderer
 
 class MapFishTemplate(Template):
@@ -7,4 +7,8 @@ class MapFishTemplate(Template):
     template_renderer=staticmethod(paste_script_template_renderer)
     required_templates = ['pylons']
     _template_dir = 'templates/project'
+    vars = [
+            var('mapfishclientmfbasepath', 'Path to mapfish client mfbase', 
+                default=''),
+            ]
     overwrite = True
