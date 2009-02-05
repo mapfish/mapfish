@@ -106,8 +106,8 @@ class Spatial(Filter):
 
         if self.type == self.GEOMETRY:
             factory = lambda ob: GeoJSON.to_instance(ob)
-            feature = loads(self.values['geometry'], object_hook=factory)
-            geometry = asShape(feature['geometry'])
+            geometry = loads(self.values['geometry'], object_hook=factory)
+            geometry = asShape(geometry)
                        
         if self.epsg != self.geom_column.type.srid:
             geom_column = func.transform(self.geom_column, self.epsg)
