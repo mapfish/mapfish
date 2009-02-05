@@ -173,6 +173,16 @@ class MapFishControllerCommand(Command):
                              dest=os.path.join('tests', 'functional'),
                              filename='test_' + testName,
                              template_renderer=paste_script_template_renderer)
+            
+            resource_command = ("\nTo create the appropriate RESTful mapping, "
+                                "add a map statement to your\n")
+            resource_command += ("config/routing.py file in the CUSTOM ROUTES section "
+                                 "like this:\n\n") 
+            command = 'map.resource("%s", "%s")\n' % \
+                (singularName, pluralName)
+            resource_command += command
+
+            print resource_command
 
         except BadCommand, e:
             raise BadCommand('An error occurred. %s' % e)
