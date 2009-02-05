@@ -54,6 +54,9 @@ def create_default_filter(request, id_column, geom_column):
     params."""
 
     filter = None
+    tolerance = 0
+    if 'tolerance' in request.params:
+        tolerance = float(request.params['tolerance'])
 
     # get projection EPSG code
     epsg = None
@@ -66,13 +69,11 @@ def create_default_filter(request, id_column, geom_column):
             Spatial.BOX,
             geom_column,
             box=request.params['box'].split(','),
+            tolerance=tolerance,
             epsg=epsg
         )
     elif 'lon' and 'lat' in request.params:
         # within filter
-        tolerance = None
-        if 'tolerance' in request.params:
-            tolerance = float(request.params['tolerance'])
         filter = Spatial(
             Spatial.WITHIN,
             geom_column,
@@ -81,6 +82,15 @@ def create_default_filter(request, id_column, geom_column):
             tolerance=tolerance,
             epsg=epsg
         )
+    elif 'geometry' in request.params:
+        # geometry filter
+        filter = Spatial(
+            Spatial.GEOMETRY,
+            geom_column,
+            geometry=request.params['geometry'],
+            tolerance=tolerance,
+            epsg=epsg
+        )        
 
     return filter
 

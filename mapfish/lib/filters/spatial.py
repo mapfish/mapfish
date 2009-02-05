@@ -21,12 +21,17 @@ from mapfish.lib.filters import Filter
 
 from sqlalchemy.sql import func
 
+from geojson import loads, GeoJSON
+
+
+from shapely.geometry import asShape
 from shapely.geometry.point import Point
 from shapely.geometry.polygon import Polygon
 
 class Spatial(Filter):
     BOX = 'BOX'
     WITHIN = 'WITHIN'
+    GEOMETRY = 'GEOMETRY'
 
     def __init__(self, type, geom_column, **kwargs):
         """Create a spatial filter.
@@ -49,6 +54,11 @@ class Spatial(Filter):
               box
                 a list of coordinates representing the bounding
                 box [xmin, ymin, xmax, ymax]
+                
+              tolerance
+                the tolerance around the box of the search
+                region, is expressed in the units associated with
+                the projection system of the lon/lat coordinates.
             
               for Spatial.WITHIN filter:
 
@@ -66,30 +76,52 @@ class Spatial(Filter):
                 the tolerance around the center of the search
                 region, is expressed in the units associated with
                 the projection system of the lon/lat coordinates.
+
+              for Spatial.GEOMETRY filter:
+                
+              geometry
+                the geometry to search in, formatted in a GeoJSON
+                string
+
+              tolerance
+                the tolerance around the geometry of the search
+                region, is expressed in the units associated with
+                the projection system of the lon/lat coordinates.
+                
         """
         self.type = type
         self.geom_column = geom_column
         self.values = kwargs
-        if 'epsg' in self.values:
+        if 'epsg' in self.values and self.values['epsg'] is not None:
             self.epsg = self.values['epsg']
         else:
-            self.epsg = None
+            self.epsg = self.geom_column.type.srid
 
     def to_sql_expr(self):
-        if self.type == 'BOX':
-            return self.__to_sql_expr_box()
+        if self.type == self.BOX:
+            geometry = self.__box_to_geometry()
 
-        if self.type == 'WITHIN':
-            return self.__to_sql_expr_within()
+        if self.type == self.WITHIN:
+            geometry = Point(self.values['lon'], self.values['lat'])
 
-    def __to_sql_expr_box(self):
-        coords = self.values['box']
+        if self.type == self.GEOMETRY:
+            factory = lambda ob: GeoJSON.to_instance(ob)
+            feature = loads(self.values['geometry'], object_hook=factory)
+            geometry = asShape(feature['geometry'])
+                       
+        if self.epsg != self.geom_column.type.srid:
+            geom_column = func.transform(self.geom_column, self.epsg)
+        else:
+            geom_column = self.geom_column
 
-        epsg = self.geom_column.type.srid
-        if self.epsg is not None:
-            epsg = self.epsg
+        # TODO : use st_intersects when only postgis 1.3 supported
+        tolerance = self.values['tolerance']
+        pg_geometry = func.geomfromtext(geometry.wkt, self.epsg)
+        return func.expand(pg_geometry, tolerance).op('&&')(geom_column) and \
+            (func.distance(geom_column, pg_geometry) < tolerance)
 
-        coords = map(float, coords)
+    def __box_to_geometry(self):
+        coords = map(float, self.values['box'])
 
         # define polygon from box
         point_a = (coords[0], coords[1])
@@ -98,37 +130,6 @@ class Spatial(Filter):
         point_d = (coords[2], coords[1])
         point_e = point_a
         coords = (point_a, point_b, point_c, point_d, point_e)
-        poly = Polygon(coords)
-        pg_poly = func.geomfromtext(poly.wkt, epsg)
-
-        if epsg != self.geom_column.type.srid:
-            pg_poly = func.transform(pg_poly, epsg)
-
-        # TODO : use st_intersects when only postgis 1.3 supported
-        return self.geom_column.op('&&')(pg_poly) and \
-            func.intersects(self.geom_column, pg_poly)
-
-    def __to_sql_expr_within(self):
-        lon = self.values['lon']
-        lat = self.values['lat']
-        tolerance = self.values['tolerance']
-
-        epsg = self.geom_column.type.srid
-        if self.epsg is not None:
-            epsg = self.epsg
-
-        point = Point(lon, lat)
-        pg_point = func.pointfromtext(point.wkt, epsg)
-
-        geom = self.geom_column
-        if epsg != self.geom_column.type.srid:
-            geom = func.transform(geom, epsg)
         
-        # TODO : use st_dwithin when only Postgis 1.3 supported
-        if tolerance is not None and tolerance > 0:
-            e = func.expand(geom, tolerance).op('&&')(pg_point) and \
-                (func.distance(geom, pg_point) < tolerance)
-        else:
-            e = func.within(pg_point, geom)
+        return Polygon(coords)
 
-        return e
