@@ -40,6 +40,27 @@ class {{contrClass}}Controller(BaseController):
         # filter = logical.Logical(logical.Logical.AND, [default_filter, compare_filter])
         # return self.protocol.index(request, response, format=format, filter=filter)
         #
+        #
+        # You can also create filters using sqlalchemy syntax.
+        # It is possible for example to mix a custom sqlalchemy filter
+        # with the default mapfish filter.
+        #
+        # E.g.
+        #
+        # from sqlalchemy.sql import and_
+        #
+        # default_filter = create_default_filter(
+        #     request,
+        #     {{modelClass}}.primary_key_column(),
+        #     {{modelClass}}.geometry_column()
+        # )
+        # compare_filter = {{modelClass}}.mycolumnname.ilike('%myvalue%')
+        # if default_filter is not None:
+        #     filter = and_(default_filter.to_sql_expr(), compare_filter)
+        # else:
+        #     filter = compare_filter
+        # return self.protocol.index(request, response, format=format, filter=filter)
+
         return self.protocol.index(request, response, format=format)
 
     def show(self, id, format='json'):

@@ -95,4 +95,4 @@ class Comparison(Filter):
             return self.column.like('%' + self.values['value'] + '%')
 
         if self.type == Comparison.ILIKE:
-            return self.column.op('ilike')('%' + self.values['value'] + '%')
+            return self.column.ilike('%' + self.values['value'] + '%')

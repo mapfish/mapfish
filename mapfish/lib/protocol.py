@@ -31,6 +31,7 @@ from sqlalchemy.sql import select, asc, desc
 from geojson import dumps as _dumps, loads, Feature, FeatureCollection, GeoJSON
 from geojson.codec import PyGFPEncoder
 
+from mapfish.lib.filters import Filter
 from mapfish.lib.filters.spatial import Spatial
 
 class MapFishJSONEncoder(PyGFPEncoder):
@@ -110,7 +111,7 @@ class Protocol(object):
     def _query(self, filter=None, limit=None, offset=None, order_by=None):
         """ Query the database using the passed limit, offset and filter,
             and return instances of the mapped class. """
-        if filter:
+        if filter and isinstance(filter, Filter):
             filter = filter.to_sql_expr()
         query = self.Session.query(self.mapped_class).filter(filter)
         if order_by:
@@ -186,7 +187,7 @@ class Protocol(object):
         """ Return the number of records matching the given filter. """
         if not filter:
             filter = self._get_default_filter(request)
-        if filter:
+        if filter and isinstance(filter, Filter):
             filter = filter.to_sql_expr()
         return str(self.Session.query(self.mapped_class).filter(filter).count())
 
