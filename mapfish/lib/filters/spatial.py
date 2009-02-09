@@ -19,7 +19,7 @@
 
 from mapfish.lib.filters import Filter
 
-from sqlalchemy.sql import func
+from sqlalchemy.sql import func, and_
 
 from geojson import loads, GeoJSON
 
@@ -114,11 +114,10 @@ class Spatial(Filter):
         else:
             geom_column = self.geom_column
 
-        # TODO : use st_intersects when only postgis 1.3 supported
         tolerance = self.values['tolerance']
         pg_geometry = func.geomfromtext(geometry.wkt, self.epsg)
-        return func.expand(pg_geometry, tolerance).op('&&')(geom_column) and \
-            (func.distance(geom_column, pg_geometry) < tolerance)
+        return and_(func.expand(pg_geometry, tolerance).op('&&')(geom_column),
+                    func.distance(geom_column, pg_geometry) <= tolerance)
 
     def __box_to_geometry(self):
         coords = map(float, self.values['box'])
