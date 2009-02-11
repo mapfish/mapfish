@@ -119,9 +119,10 @@ class Protocol(object):
         query = query.limit(limit).offset(offset)
         return query.all()
 
-    def _encode(self, objects):
+    def _encode(self, objects, response):
         """ Return a GeoJSON representation of the passed objects. """
         if objects:
+            response.content_type = "application/json"
             if isinstance(objects, list):
                 return dumps(
                     FeatureCollection(
@@ -181,7 +182,7 @@ class Protocol(object):
 
         order_by = self._get_order_by(request)
             
-        return self._encode(self._query(filter, limit, offset, order_by))
+        return self._encode(self._query(filter, limit, offset, order_by), response)
 
     def count(self, request, filter=None):
         """ Return the number of records matching the given filter. """
@@ -204,7 +205,7 @@ class Protocol(object):
         if obj is None:
             abort(404)
 
-        return self._encode(obj)
+        return self._encode(obj, response)
 
     def create(self, request, response):
         """ Read the GeoJSON feature collection from the request body and
@@ -236,7 +237,7 @@ class Protocol(object):
         self.Session.commit()
         response.status = 201
         if len(objects) > 0:
-            return dumps(FeatureCollection([o.toFeature() for o in objects]))
+            return self._encode(objects, response)
         return
 
     def update(self, request, response, id):
@@ -259,7 +260,7 @@ class Protocol(object):
             obj[key] = feature.properties[key]
         self.Session.commit()
         response.status = 201
-        return dumps(obj.toFeature())
+        return self._encode(obj, response)
 
     def delete(self, request, response, id):
         """ Remove the targetted feature from the database """
