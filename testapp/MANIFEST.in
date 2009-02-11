@@ -1,2 +1,0 @@
-recursive-include testapp/public *
-recursive-include testapp/templates *
