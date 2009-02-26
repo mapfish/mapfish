@@ -91,8 +91,8 @@ class PrinterController(WSGIController):
         cmd = ['java', '-cp', self.jarPath, 'org.mapfish.print.ShellMapPrinter',
              '--config=' + self.configPath, '--verbose='+_getJavaLogLevel()]
         self._addCommonJavaParams(cmd)
-        exe = Popen(cmd, stdin = PIPE, stdout = PIPE, stderr = PIPE)
         spec = request.params['spec'].encode('utf8')
+        exe = Popen(cmd, stdin = PIPE, stdout = PIPE, stderr = PIPE)
         exe.stdin.write(spec)
         exe.stdin.close()
         result = exe.stdout.read()
@@ -125,8 +125,8 @@ class PrinterController(WSGIController):
                '--verbose='+_getJavaLogLevel(),
                '--output=' + pdfFilename]
         self._addCommonJavaParams(cmd)
-        exe = Popen(cmd, stdin = PIPE, stderr = PIPE)
         spec = request.environ['wsgi.input'].read()
+        exe = Popen(cmd, stdin = PIPE, stderr = PIPE)
         exe.stdin.write(spec)
         exe.stdin.close()
         error = exe.stderr.read()
