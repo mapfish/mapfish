@@ -23,7 +23,11 @@ use = egg:Paste#urlmap
 
 [app:mfbase]
 use = egg:Paste#static
+filter-with = gzip
 document_root = {{mapfishclientmfbasepath}}/
+
+[filter:gzip]
+use = egg:Paste#gzip
 
 # Uncomment this section and the corresponding line in the [composite:main]
 # section if you want access to the MapFish examples in the project.
