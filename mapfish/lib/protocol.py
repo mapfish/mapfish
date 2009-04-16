@@ -33,6 +33,20 @@ from geojson.codec import PyGFPEncoder
 
 from mapfish.lib.filters import Filter
 from mapfish.lib.filters.spatial import Spatial
+from mapfish.lib.filters.comparison import Comparison
+from mapfish.lib.filters.logical import Logical
+
+
+PARAM_TO_FILTER_TYPE = {
+    "eq": Comparison.EQUAL_TO,
+    "ne": Comparison.NOT_EQUAL_TO,
+    "lt": Comparison.LOWER_THAN,
+    "lte": Comparison.LOWER_THAN_OR_EQUAL_TO,
+    "gt": Comparison.GREATER_THAN,
+    "gte": Comparison.GREATER_THAN_OR_EQUAL_TO,
+    "like": Comparison.LIKE,
+    "ilike": Comparison.ILIKE
+}
 
 class MapFishJSONEncoder(PyGFPEncoder):
     """ SQLAlchemy's Reflecting Tables mechanism uses decimal.Decimal
@@ -49,10 +63,13 @@ def dumps(obj, cls=MapFishJSONEncoder, **kwargs):
     """ Wrapper for geojson's dumps function """
     return _dumps(obj, cls=cls, **kwargs)
 
-def create_default_filter(request, id_column, geom_column):
+def create_default_filter(request, mapped_class):
     """Create MapFish default filter based on the request params. It
     is either a box or within spatial filter, depending on the request
     params."""
+
+    id_column = mapped_class.primary_key_column()
+    geom_column = mapped_class.geometry_column()
 
     filter = None
     tolerance = 0
@@ -65,7 +82,7 @@ def create_default_filter(request, id_column, geom_column):
         epsg = int(request.params['epsg'])
 
     if 'box' in request.params:
-        # box filter
+        # box spatial filter
         filter = Spatial(
             Spatial.BOX,
             geom_column,
@@ -74,7 +91,7 @@ def create_default_filter(request, id_column, geom_column):
             epsg=epsg
         )
     elif 'lon' and 'lat' in request.params:
-        # within filter
+        # within spatial filter
         filter = Spatial(
             Spatial.WITHIN,
             geom_column,
@@ -84,14 +101,38 @@ def create_default_filter(request, id_column, geom_column):
             epsg=epsg
         )
     elif 'geometry' in request.params:
-        # geometry filter
+        # geometry spatial filter
         filter = Spatial(
             Spatial.GEOMETRY,
             geom_column,
             geometry=request.params['geometry'],
             tolerance=tolerance,
             epsg=epsg
-        )        
+        )
+
+
+    if 'queryable' in request.params:
+        # comparison filter
+        queryable = request.params['queryable'].split(',')
+        for k in request.params:
+            if "__" not in k:
+                continue
+            col, op = k.split("__")
+            if col not in queryable or op not in PARAM_TO_FILTER_TYPE:
+                continue
+            type = PARAM_TO_FILTER_TYPE[op]
+            f = Comparison(
+                type,
+                mapped_class.__table__.columns[col],
+                value=request.params[k]
+            )
+            if filter is None:
+                filter = f
+            else:
+                filter = Logical(
+                    Logical.AND,
+                    filters=[filter, f]
+                )
 
     return filter
 
@@ -135,9 +176,7 @@ class Protocol(object):
     def _get_default_filter(self, request):
         """ Return a MapFish default filter. """
         return create_default_filter(
-            request,
-            self.mapped_class.primary_key_column(),
-            self.mapped_class.geometry_column()
+            request, self.mapped_class
         )
 
     def _get_order_by(self, request):

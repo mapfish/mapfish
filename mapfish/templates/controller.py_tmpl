@@ -28,9 +28,7 @@ class {{contrClass}}Controller(BaseController):
         # E.g.
         #
         # default_filter = create_default_filter(
-        #     request,
-        #     {{modelClass}}.primary_key_column(),
-        #     {{modelClass}}.geometry_column()
+        #     request, {{modelClass}}
         # )
         # compare_filter = comparison.Comparison(
         #     comparison.Comparison.ILIKE,
@@ -50,9 +48,7 @@ class {{contrClass}}Controller(BaseController):
         # from sqlalchemy.sql import and_
         #
         # default_filter = create_default_filter(
-        #     request,
-        #     {{modelClass}}.primary_key_column(),
-        #     {{modelClass}}.geometry_column()
+        #     request, {{modelClass}}
         # )
         # compare_filter = {{modelClass}}.mycolumnname.ilike('%myvalue%')
         # if default_filter is not None:
