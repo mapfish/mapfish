@@ -136,6 +136,13 @@ def create_default_filter(request, mapped_class):
 
     return filter
 
+def asbool(val):
+    if isinstance(val, str) or isinstance(val, unicode):
+        low = val.lower()
+        return low != 'false' and low != '0'
+    else:
+        return bool(val)   
+
 class Protocol(object):
 
     def __init__(self, Session, mapped_class, readonly=False, **kwargs):
@@ -160,18 +167,34 @@ class Protocol(object):
         query = query.limit(limit).offset(offset)
         return query.all()
 
-    def _encode(self, objects, response):
+    def _encode(self, objects, request, response):
         """ Return a GeoJSON representation of the passed objects. """
         if objects:
             response.content_type = "application/json"
             if isinstance(objects, list):
                 return dumps(
                     FeatureCollection(
-                        [o.toFeature() for o in objects if o.geometry]
+                        [self._filter_attrs(o.toFeature(), request) for o in objects if o.geometry]
                     )
                 )
             else:
-                return dumps(objects.toFeature())
+                return dumps(self._filter_attrs(objects.toFeature(), request))
+
+    def _filter_attrs(self, feature, request):
+        """ Remove some attributes or the geometry according to the 'attrs' and
+            the 'no_geom' parameters. """
+        if 'attrs' in request.params:
+            attrs = request.params['attrs'].split(',')
+            props = feature.properties
+            new_props = {}
+            for name in attrs:
+                if name in props:
+                    new_props[name] = props[name]
+            feature.properties = new_props
+
+        if asbool(request.params.get('no_geom', False)):
+            feature.geometry=None
+        return feature
 
     def _get_default_filter(self, request):
         """ Return a MapFish default filter. """
@@ -221,7 +244,7 @@ class Protocol(object):
 
         order_by = self._get_order_by(request)
             
-        return self._encode(self._query(filter, limit, offset, order_by), response)
+        return self._encode(self._query(filter, limit, offset, order_by), request, response)
 
     def count(self, request, filter=None):
         """ Return the number of records matching the given filter. """
@@ -244,7 +267,7 @@ class Protocol(object):
         if obj is None:
             abort(404)
 
-        return self._encode(obj, response)
+        return self._encode(obj, request, response)
 
     def create(self, request, response):
         """ Read the GeoJSON feature collection from the request body and
@@ -276,7 +299,7 @@ class Protocol(object):
         self.Session.commit()
         response.status = 201
         if len(objects) > 0:
-            return self._encode(objects, response)
+            return self._encode(objects, request, response)
         return
 
     def update(self, request, response, id):
@@ -299,7 +322,7 @@ class Protocol(object):
             obj[key] = feature.properties[key]
         self.Session.commit()
         response.status = 201
-        return self._encode(obj, response)
+        return self._encode(obj, request, response)
 
     def delete(self, request, response, id):
         """ Remove the targetted feature from the database """

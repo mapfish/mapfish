@@ -170,4 +170,5 @@ class GeometryTableMixIn(object):
 
         return Feature(id=self.fid, 
                        geometry=self.geometry,
-                       properties=attributes)
+                       properties=attributes,
+                       bbox=self.geometry.bounds)
