@@ -63,10 +63,9 @@ def dumps(obj, cls=MapFishJSONEncoder, **kwargs):
     """ Wrapper for geojson's dumps function """
     return _dumps(obj, cls=cls, **kwargs)
 
-def create_default_filter(request, mapped_class):
-    """Create MapFish default filter based on the request params. It
-    is either a box or within spatial filter, depending on the request
-    params."""
+def create_geom_filter(request, mapped_class):
+    """Create MapFish geometry filter based on the request params. Either
+    a box or within or geometry filter, depending on the request params."""
 
     id_column = mapped_class.primary_key_column()
     geom_column = mapped_class.geometry_column()
@@ -109,8 +108,14 @@ def create_default_filter(request, mapped_class):
             tolerance=tolerance,
             epsg=epsg
         )
+    return filter
 
+def create_attr_filter(request, mapped_class):
+    """Create MapFish attribute filter based on the request params,
+    either a comparison filter or a set of comparison filters within
+    a logical and filter."""
 
+    filter = None
     if 'queryable' in request.params:
         # comparison filter
         queryable = request.params['queryable'].split(',')
@@ -133,8 +138,21 @@ def create_default_filter(request, mapped_class):
                     Logical.AND,
                     filters=[filter, f]
                 )
-
     return filter
+
+def create_default_filter(request, mapped_class):
+    """ Create MapFish default filter based on the request params."""
+
+    geom_filter = create_geom_filter(request, mapped_class) 
+    attr_filter = create_attr_filter(request, mapped_class)
+
+    if geom_filter is None and attr_filter is None:
+        return None
+
+    return Logical(
+        Logical.AND,
+        filters=[geom_filter, attr_filter]
+    )
 
 def asbool(val):
     if isinstance(val, str) or isinstance(val, unicode):
