@@ -144,7 +144,10 @@ class PrinterController(WSGIController):
                 'messages': error
             })
         else:
-            unlink(pdfFilename)
+            try:
+                unlink(pdfFilename)
+            except OSError:
+                pass
             response.status = 500
             response.headers['Content-Type'] = 'text/plain; charset=utf-8'
             return "ERROR(" + str(ret) + ")\n\nspec=" + spec + "\n\n" + error
