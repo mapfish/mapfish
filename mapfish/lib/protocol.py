@@ -120,6 +120,8 @@ def create_attr_filter(request, mapped_class):
         # comparison filter
         queryable = request.params['queryable'].split(',')
         for k in request.params:
+            if len(request.params[k]) <= 0:
+                continue
             if "__" not in k:
                 continue
             col, op = k.split("__")
