@@ -203,7 +203,7 @@ class Protocol(object):
 
     def _encode(self, objects, request, response):
         """ Return a GeoJSON representation of the passed objects. """
-        if objects:
+        if objects is not None:
             response.content_type = "application/json"
             if isinstance(objects, list):
                 return dumps(
