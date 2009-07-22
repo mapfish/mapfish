@@ -60,14 +60,13 @@ class MapFishJSONEncoder(PyGFPEncoder):
         return PyGFPEncoder.default(self, obj)
 
 def dumps(obj, cls=MapFishJSONEncoder, **kwargs):
-    """ Wrapper for geojson's dumps function """
+    """ Wrapper for geojson's dumps function. """
     return _dumps(obj, cls=cls, **kwargs)
 
 def create_geom_filter(request, mapped_class):
     """Create MapFish geometry filter based on the request params. Either
     a box or within or geometry filter, depending on the request params."""
 
-    id_column = mapped_class.primary_key_column()
     geom_column = mapped_class.geometry_column()
 
     filter = None
@@ -157,6 +156,7 @@ def create_default_filter(request, mapped_class):
     )
 
 def asbool(val):
+    """ Convert the passed value to a boolean. """
     if isinstance(val, str) or isinstance(val, unicode):
         low = val.lower()
         return low != 'false' and low != '0'
@@ -166,6 +166,31 @@ def asbool(val):
 class Protocol(object):
 
     def __init__(self, Session, mapped_class, readonly=False, **kwargs):
+        """ Create a protocol.
+
+          Session
+              the SQLAlchemy session.
+
+          mapped_class
+              the class mapped to a database table in the ORM.
+
+          readonly
+              ``True`` if this protocol is read-only, ``False`` otherwise. If
+              ``True``, the methods ``create()``, ``update()`` and  ``delete()``
+              will set 403 as the response status and return right away.
+
+          \**kwargs
+              before_create
+                a callback function called before a feature is inserted
+                in the database table, the function receives the request
+                and the feature about to be inserted.
+
+              before_update
+                a callback function called before a feature is updated
+                in the database table, the function receives the request
+                and the feature about to be updated.
+        """
+              
         self.Session = Session
         self.mapped_class = mapped_class
         self.readonly = readonly
@@ -176,20 +201,9 @@ class Protocol(object):
         if kwargs.has_key('before_update'):
             self.before_update = kwargs['before_update']
 
-    def _query(self, filter=None, limit=None, offset=None, order_by=None):
-        """ Query the database using the passed limit, offset and filter,
-            and return instances of the mapped class. """
-        if filter and isinstance(filter, Filter):
-            filter = filter.to_sql_expr()
-        query = self.Session.query(self.mapped_class).filter(filter)
-        if order_by:
-            query = query.order_by(order_by)
-        query = query.limit(limit).offset(offset)
-        return query.all()
-
     def _encode(self, objects, request, response):
         """ Return a GeoJSON representation of the passed objects. """
-        if objects:
+        if objects is not None:
             response.content_type = "application/json"
             if isinstance(objects, list):
                 return dumps(
@@ -201,8 +215,8 @@ class Protocol(object):
                 return dumps(self._filter_attrs(objects.toFeature(), request))
 
     def _filter_attrs(self, feature, request):
-        """ Remove some attributes or the geometry according to the 'attrs' and
-            the 'no_geom' parameters. """
+        """ Remove some attributes from the feature and set the geometry to None
+            in the feature based ``attrs`` and the ``no_geom`` parameters. """
         if 'attrs' in request.params:
             attrs = request.params['attrs'].split(',')
             props = feature.properties
@@ -239,14 +253,9 @@ class Protocol(object):
         else:
             return None
 
-    def index(self, request, response, format='json', filter=None):
-        """ Build a query based on the filter and the request
-        params, send the query to the database, and return a
-        GeoJSON representation of the results. """
-
-        # only json is supported
-        if format != 'json':
-            abort(404)
+    def _query(self, request, filter=None, execute=True):
+        """ Build a query based on the filter and the request params,
+            and send the query to the database. """
 
         limit = None
         offset = None
@@ -262,9 +271,32 @@ class Protocol(object):
             # create MapFish default filter
             filter = self._get_default_filter(request)
 
+        if filter and isinstance(filter, Filter):
+            filter = filter.to_sql_expr()
+
+        query = self.Session.query(self.mapped_class).filter(filter)
+
         order_by = self._get_order_by(request)
-            
-        return self._encode(self._query(filter, limit, offset, order_by), request, response)
+        if order_by:
+            query = query.order_by(order_by)
+
+        query = query.limit(limit).offset(offset)
+
+        if execute:
+            return query.all()
+        else:
+            return query
+
+    def index(self, request, response, format='json', filter=None):
+        """ Build a query based on the filter and the request
+        params, send the query to the database, and return a
+        GeoJSON representation of the query results. """
+
+        # only json is supported
+        if format != 'json':
+            abort(404)
+
+        return self._encode(self._query(request, filter), request, response)
 
     def count(self, request, filter=None):
         """ Return the number of records matching the given filter. """
@@ -289,7 +321,7 @@ class Protocol(object):
 
         return self._encode(obj, request, response)
 
-    def create(self, request, response):
+    def create(self, request, response, execute=True):
         """ Read the GeoJSON feature collection from the request body and
             create new objects in the database. """
         if self.readonly:
@@ -314,9 +346,10 @@ class Protocol(object):
             for key in feature.properties:
                 obj[key] = feature.properties[key]
             if create:
-                self.Session.save(obj)
+                self.Session.add(obj)
             objects.append(obj)
-        self.Session.commit()
+        if execute:
+            self.Session.commit()
         response.status = 201
         if len(objects) > 0:
             return self._encode(objects, request, response)
