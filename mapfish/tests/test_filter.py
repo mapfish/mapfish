@@ -224,7 +224,7 @@ def test_comparison_like():
     filter = filter.to_sql_expr()
     params = filter.compile().params
     assert str(filter) == '"table".text LIKE :text_1'
-    assert params["text_1"] == "%foo%"
+    assert params["text_1"] == "foo"
 
 def test_comparison_ilike():
     filter = comparison.Comparison(
@@ -235,7 +235,7 @@ def test_comparison_ilike():
     filter = filter.to_sql_expr()
     params = filter.compile().params
     assert str(filter) == 'lower("table".text) LIKE lower(:text_1)'
-    assert params["text_1"] == "%foo%"
+    assert params["text_1"] == "foo"
 
 #
 # Test FeatureId
@@ -284,7 +284,7 @@ def test_logical_not():
     filter = filter.to_sql_expr()
     params = filter.compile().params
     assert str(filter) == '"table".text NOT LIKE :text_1'
-    assert params["text_1"] == "%foo%"
+    assert params["text_1"] == "foo"
 
 def test_logical_and():
     filter = logical.Logical(
@@ -306,7 +306,7 @@ def test_logical_and():
     params = filter.compile().params
     assert str(filter) == '"table".id = :id_1 AND "table".text LIKE :text_1'
     assert params["id_1"] == 1
-    assert params["text_1"] == "%foo%"
+    assert params["text_1"] == "foo"
 
 def test_logical_or():
     filter = logical.Logical(
@@ -328,4 +328,4 @@ def test_logical_or():
     params = filter.compile().params
     assert str(filter) == '"table".id = :id_1 OR "table".text LIKE :text_1'
     assert params["id_1"] == 1
-    assert params["text_1"] == "%foo%"
+    assert params["text_1"] == "foo"

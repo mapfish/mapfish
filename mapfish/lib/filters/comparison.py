@@ -92,7 +92,7 @@ class Comparison(Filter):
             )
 
         if self.type == Comparison.LIKE:
-            return self.column.like('%' + self.values['value'] + '%')
+            return self.column.like(self.values['value'])
 
         if self.type == Comparison.ILIKE:
-            return self.column.ilike('%' + self.values['value'] + '%')
+            return self.column.ilike(self.values['value'])
