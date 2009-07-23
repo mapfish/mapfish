@@ -79,12 +79,19 @@ def create_geom_filter(request, mapped_class):
     if 'epsg' in request.params:
         epsg = int(request.params['epsg'])
 
-    if 'box' in request.params:
+    # "box" is an alias to "bbox"
+    box = None
+    if 'bbox' in request.params:
+        box = request.params['bbox']
+    elif 'box' in request.params:
+        box = request.params['box']
+
+    if box is not None:
         # box spatial filter
         filter = Spatial(
             Spatial.BOX,
             geom_column,
-            box=request.params['box'].split(','),
+            box=box.split(','),
             tolerance=tolerance,
             epsg=epsg
         )

@@ -64,6 +64,15 @@ def test_create_geom_filter():
     assert filter.values["epsg"] == 900913
 
     request = FakeRequest(
+        {"bbox": "-45,-5,40,0", "tolerance": "1", "epsg": "900913"}
+    )
+    filter = create_geom_filter(request, MappedClass)
+    assert isinstance(filter, spatial.Spatial)
+    assert filter.type == spatial.Spatial.BOX
+    assert filter.values["tolerance"] == 1
+    assert filter.values["epsg"] == 900913
+
+    request = FakeRequest(
         {"lon": "-45", "lat": "5", "tolerance": "1", "epsg": "900913"}
     )
     filter = create_geom_filter(request, MappedClass)
