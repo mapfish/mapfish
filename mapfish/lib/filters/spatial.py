@@ -29,66 +29,67 @@ from shapely.geometry.point import Point
 from shapely.geometry.polygon import Polygon
 
 class Spatial(Filter):
+    """Create a spatial filter.
+
+      type
+          the type of filter to create. Possible values are
+          Spatial.BOX or Spatial.WITHIN.
+
+      geom_column
+          the Column object corresponding to the geometry
+          column.
+
+      \**kwargs
+          epsg
+            the EPSG code of the lon, lat or box values, see
+            below.
+
+          for Spatial.BOX filter:
+
+          box
+            a list of coordinates representing the bounding
+            box [xmin, ymin, xmax, ymax]
+            
+          tolerance
+            the tolerance around the box of the search
+            region, is expressed in the units associated with
+            the projection system of the lon/lat coordinates.
+        
+          for Spatial.WITHIN filter:
+
+          lon
+            the x coordinate of the center of the search
+            region, the projection system of that coordinate
+            can be specified with the epsg key.
+
+          lat
+            the y coordinate of the center of the search
+            region, the projection system of that coordinate
+            can be specified with the epsg key.
+
+          tolerance
+            the tolerance around the center of the search
+            region, is expressed in the units associated with
+            the projection system of the lon/lat coordinates.
+
+          for Spatial.GEOMETRY filter:
+            
+          geometry
+            the geometry to search in, formatted in a GeoJSON
+            string
+
+          tolerance
+            the tolerance around the geometry of the search
+            region, is expressed in the units associated with
+            the projection system of the lon/lat coordinates.
+            
+    """
+
     BOX = 'BOX'
     WITHIN = 'WITHIN'
     GEOMETRY = 'GEOMETRY'
 
     def __init__(self, type, geom_column, **kwargs):
-        """Create a spatial filter.
-
-          type
-              the type of filter to create. Possible values are
-              Spatial.BOX or Spatial.WITHIN.
-
-          geom_column
-              the Column object corresponding to the geometry
-              column.
-
-          \**kwargs
-              epsg
-                the EPSG code of the lon, lat or box values, see
-                below.
-
-              for Spatial.BOX filter:
-
-              box
-                a list of coordinates representing the bounding
-                box [xmin, ymin, xmax, ymax]
-                
-              tolerance
-                the tolerance around the box of the search
-                region, is expressed in the units associated with
-                the projection system of the lon/lat coordinates.
-            
-              for Spatial.WITHIN filter:
-
-              lon
-                the x coordinate of the center of the search
-                region, the projection system of that coordinate
-                can be specified with the epsg key.
-
-              lat
-                the y coordinate of the center of the search
-                region, the projection system of that coordinate
-                can be specified with the epsg key.
-
-              tolerance
-                the tolerance around the center of the search
-                region, is expressed in the units associated with
-                the projection system of the lon/lat coordinates.
-
-              for Spatial.GEOMETRY filter:
-                
-              geometry
-                the geometry to search in, formatted in a GeoJSON
-                string
-
-              tolerance
-                the tolerance around the geometry of the search
-                region, is expressed in the units associated with
-                the projection system of the lon/lat coordinates.
-                
-        """
         self.type = type
         self.geom_column = geom_column
         self.values = kwargs

@@ -22,22 +22,23 @@ from mapfish.lib.filters import Filter
 from sqlalchemy.sql import and_, or_, not_
 
 class Logical(Filter):
+    """Logical filter.
+
+      type
+          the type of filter to create. Possible values are Logical.NOT,
+          Logical.AND or Logical.OR.
+
+      filters=None
+          a list of filters this filter will create logical expressions
+          with. filters can also be added after the creation of the 
+          logical filter, using logical_filter.filters.append(filter).
+    """
+
     NOT = '!'
     AND = '&&'
     OR  = '||'
 
     def __init__(self, type, filters=None):
-        """Create a logical filter.
-
-          type
-              the type of filter to create. Possible values are Logical.NOT,
-              Logical.AND or Logical.OR.
-
-          filters=None
-              a list of filters this filter will create logical expressions
-              with. filters can also be added after the creation of the 
-              logical filter, using logical_filter.filters.append(filter).
-        """
         self.type = type
         if filters is None:
             self.filters = []

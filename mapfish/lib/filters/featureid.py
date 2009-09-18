@@ -20,15 +20,16 @@
 from mapfish.lib.filters import Filter
 
 class FeatureId(Filter):
+    """Create a feature id filter.
+
+      id_column 
+          the Column object corresponding to the id column.
+
+      value
+          this filter's value
+    """
+
     def __init__(self, id_column, value):
-        """Create a feature id filter.
-
-          id_column 
-              the Column object corresponding to the id column.
-
-          value
-              this filter's value
-        """
         self.id_column = id_column
         self.value = value
 

@@ -22,6 +22,42 @@ from mapfish.lib.filters import Filter
 from sqlalchemy.sql import and_
 
 class Comparison(Filter):
+    """Comparison filter
+
+      type
+          the type of filter to create. Possible values are:
+            Comparison.EQUAL_TO
+
+            Comparison.NOT_EQUAL_TO
+
+            Comparison.LOWER_THAN
+
+            Comparison.LOWER_THAN_OR_EQUAL_TO
+
+            Comparison.GREATER_THAN
+
+            Comparison.GREATER_THAN_OR_EQUAL_TO
+
+            Comparison.BETWEEN
+
+            Comparison.LIKE
+
+            Comparison.ILIKE
+
+      column
+          the column to use for the comparison. 
+
+      \**kwargs
+          lower_bound
+            the lower bound value, to be used with the BETWEEN type.
+
+          upper_bound
+            the upper bound value, to be used with the BETWEEN type.
+
+          value
+            the value to use.
+    """
+
     EQUAL_TO = '=='
     NOT_EQUAL_TO = '!='
     LOWER_THAN = '<'
@@ -33,33 +69,6 @@ class Comparison(Filter):
     ILIKE = '~~'
 
     def __init__(self, type, column, **kwargs):
-        """Create a comparison filter.
-
-          type
-              the type of filter to create. Possible values are:
-                Comparison.EQUAL_TO
-                Comparison.NOT_EQUAL_TO
-                Comparison.LOWER_THAN
-                Comparison.LOWER_THAN_OR_EQUAL_TO
-                Comparison.GREATER_THAN
-                Comparison.GREATER_THAN_OR_EQUAL_TO
-                Comparison.BETWEEN
-                Comparison.LIKE
-                Comparison.ILIKE
-
-          column
-              the column to use for the comparison. 
-
-          \**kwargs
-              lower_bound
-                the lower bound value, to be used with the BETWEEN type.
-
-              upper_bound
-                the upper bound value, to be used with the BETWEEN type.
-
-              value
-                the value to use.
-        """
         self.type = type
         self.column = column
         self.values = kwargs
