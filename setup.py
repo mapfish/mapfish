@@ -24,13 +24,27 @@ except ImportError:
     use_setuptools()
     from setuptools import setup, find_packages
 
+import sys
+
+
+requirements = ['SQLAlchemy>=0.5.0,<=0.5.99',
+                'Pylons>=0.9.7,<=0.9.7.99',
+                'geojson>=1.0,<=1.0.99']
+
+# Shapely and Psychopg2 cannot be installed on Windows via python eggs
+if sys.platform != 'win32':
+    requirements.append('Shapely>=1.0.7,<=1.0.99')
+    requirements.append('psycopg2>=2.0.10,<=2.0.99')
+
+# add dependency on ctypes only for python < 2.5 wich does not embed ctypes
+if sys.version_info < (2, 5):
+    requirements.append('ctypes')
+
+
 setup(name                 = 'mapfish',
       version              = '1.2dev',
       license              = 'LGPLv3',
-      install_requires     = ['SQLAlchemy>=0.5.0rc1,<=0.5.99',
-                              'Pylons>=0.9.7rc4,<=0.9.7.99',
-                              'Shapely>=1.0.7,<=1.0.99',
-                              'geojson>=1.0,<=1.0.99'],
+      install_requires     = requirements,
       zip_safe             = False,
       include_package_data = True,
       packages             = find_packages(),
