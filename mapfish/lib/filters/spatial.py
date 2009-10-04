@@ -29,11 +29,11 @@ from shapely.geometry.point import Point
 from shapely.geometry.polygon import Polygon
 
 class Spatial(Filter):
-    """Create a spatial filter.
+    """Spatial filter.
 
       type
           the type of filter to create. Possible values are
-          Spatial.BOX or Spatial.WITHIN.
+          Spatial.BOX, Spatial.WITHIN, and Spatial.GEOMETRY.
 
       geom_column
           the Column object corresponding to the geometry

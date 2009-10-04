@@ -49,10 +49,10 @@ PARAM_TO_FILTER_TYPE = {
 }
 
 class MapFishJSONEncoder(PyGFPEncoder):
-    """ SQLAlchemy's Reflecting Tables mechanism uses decimal.Decimal
-    for numeric columns and datetime.date for dates. simplejson does
-    not know how to deal with objects of those types. This class provides
-    a simple encoder that can deal with these kinds of objects. """
+    # SQLAlchemy's Reflecting Tables mechanism uses decimal.Decimal
+    # for numeric columns and datetime.date for dates. simplejson does
+    # not know how to deal with objects of those types. This class provides
+    # a simple encoder that can deal with these kinds of objects.
 
     def default(self, obj):
         if isinstance(obj, (decimal.Decimal, datetime.date, datetime.datetime)):
@@ -60,7 +60,7 @@ class MapFishJSONEncoder(PyGFPEncoder):
         return PyGFPEncoder.default(self, obj)
 
 def dumps(obj, cls=MapFishJSONEncoder, **kwargs):
-    """ Wrapper for geojson's dumps function. """
+    # Wrapper for geojson's dumps function.
     return _dumps(obj, cls=cls, **kwargs)
 
 def create_geom_filter(request, mapped_class):
@@ -163,7 +163,7 @@ def create_default_filter(request, mapped_class):
     )
 
 def asbool(val):
-    """ Convert the passed value to a boolean. """
+    # Convert the passed value to a boolean.
     if isinstance(val, str) or isinstance(val, unicode):
         low = val.lower()
         return low != 'false' and low != '0'
@@ -171,32 +171,32 @@ def asbool(val):
         return bool(val)   
 
 class Protocol(object):
+    """ Protocol class.
+
+      Session
+          the SQLAlchemy session.
+
+      mapped_class
+          the class mapped to a database table in the ORM.
+
+      readonly
+          ``True`` if this protocol is read-only, ``False`` otherwise. If
+          ``True``, the methods ``create()``, ``update()`` and  ``delete()``
+          will set 403 as the response status and return right away.
+
+      \**kwargs
+          before_create
+            a callback function called before a feature is inserted
+            in the database table, the function receives the request
+            and the feature about to be inserted.
+
+          before_update
+            a callback function called before a feature is updated
+            in the database table, the function receives the request
+            and the feature about to be updated.
+    """
 
     def __init__(self, Session, mapped_class, readonly=False, **kwargs):
-        """ Create a protocol.
-
-          Session
-              the SQLAlchemy session.
-
-          mapped_class
-              the class mapped to a database table in the ORM.
-
-          readonly
-              ``True`` if this protocol is read-only, ``False`` otherwise. If
-              ``True``, the methods ``create()``, ``update()`` and  ``delete()``
-              will set 403 as the response status and return right away.
-
-          \**kwargs
-              before_create
-                a callback function called before a feature is inserted
-                in the database table, the function receives the request
-                and the feature about to be inserted.
-
-              before_update
-                a callback function called before a feature is updated
-                in the database table, the function receives the request
-                and the feature about to be updated.
-        """
               
         self.Session = Session
         self.mapped_class = mapped_class

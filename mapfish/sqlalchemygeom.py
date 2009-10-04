@@ -67,6 +67,28 @@ from shapely.wkb import loads
 from geojson import Feature
 
 class Geometry(TypeEngine):
+    
+    """The SQLAlchemy Geometry type.
+    
+    Use a Geometry instance when defining a geometry column in an
+    ``sqlalchemy.schema.Table`` object of the model.
+
+    Example::
+
+        wifi_table = Table('wifi', metadata,
+            Column('gid', Integer, primary_key=True),
+            Column('the_geom', Geometry(4326))
+        )
+
+    srid
+        The SRID of the geometry column, defaults to -1 (no SRID).
+
+    dims
+        The number of dimensions of the geometry column, defaults
+        to 2.
+
+    """
+
     def __init__(self, srid=-1, dims=2):
         super(Geometry, self).__init__()
         self.srid = srid
@@ -79,7 +101,7 @@ class Geometry(TypeEngine):
         return x.equals(y)
 
     def bind_processor(self, dialect):
-        """convert value from a geometry object to database"""
+        # convert value from a geometry object to database
         def convert(value):
             if value is None:
                 return None
@@ -88,7 +110,7 @@ class Geometry(TypeEngine):
         return convert
 
     def result_processor(self, dialect):
-        """convert value from database to a geometry object"""
+        # convert value from database to a geometry object
         def convert(value):
             if value is None:
                 return None
@@ -97,6 +119,48 @@ class Geometry(TypeEngine):
         return convert
 
 class GeometryTableMixIn(object):
+
+    """Class to be mixed in mapped classes.
+    
+       When used the mapped class exposes
+
+       ``geometry_column()``
+           Class method returning the ``Column`` object corresponding to the
+           geometry column.
+       
+       ``primary_key_column()``
+           Class method returning the ``Column`` object corresponding to the
+           primary key.
+
+       When used the mapped object exposes
+
+       ``geometry``
+           The Shapely geometry object representing the geometry value in the
+           database.
+           
+       ``fid``
+           The value of the primary key.
+
+       ``toFeature()``
+           Method returning a ``geojson.Feature`` object that corresponds to
+           this object.
+
+       Example::
+
+           lines_table = Table(
+               "lines", metadata,
+               Column('the_geom', Geometry(4326)),
+               autoload=True, autoload_with=engine)
+
+           class Line(GeometryTableMixIn):
+               # for GeometryTableMixIn to do its job the __table__ property
+               # must be set here
+               __table__ = lines_table
+
+           mapper(Line, lines_table)
+
+    """
+
     exported_keys = None
     __geometry_column__ = None
     __primary_key_column__ = None
@@ -108,6 +172,7 @@ class GeometryTableMixIn(object):
         setattr(self, self.primary_key_column().name, val)
 
     fid = property(_getfid, _setfid)
+    """ The value of the primary key."""
 
     def _getgeom(self):
         return getattr(self, self.geometry_column().name)
@@ -116,6 +181,7 @@ class GeometryTableMixIn(object):
         setattr(self, self.geometry_column().name, val)
 
     geometry = property(_getgeom, _setgeom)
+    """ The Shapely geometry object associated to the geometry value."""
 
     def __getitem__(self, key):
         return getattr(self, key)
@@ -154,6 +220,7 @@ class GeometryTableMixIn(object):
         return cls.__primary_key_column__
             
     def toFeature(self):
+        """Create and return a ``geojson.Feature`` object from this mapped object."""
         if not self.exported_keys:
             exported = self.__table__.c.keys()
         else:

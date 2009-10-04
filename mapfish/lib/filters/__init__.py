@@ -17,9 +17,47 @@
 # along with MapFish Server.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+""" The ``mapfish.lib.filters`` module. This module's sub-modules include
+filter implementations.
+
+Filters are commonly created in the ``index()`` action of MapFish controllers
+and passed to the ``protocol`` instance through the ``filter`` positional
+argument of the protocol ``index()`` method.
+
+Example::
+
+      class CountriesController(BaseController):
+          readonly = True # if set to True, only GET is supported
+
+          def __init__(self):
+              self.protocol = Protocol(Session, Country, self.readonly)
+
+          def index(self, format='json'):
+              # complement the MapFish default filter so only features
+              # in the [5, 45, 6, 50] extent are returned
+              filters = [
+                  create_default_filter(request, Country),
+                  Spatial(
+                      Spatial.BOX,
+                      Country.geometry_column(),
+                      box=[5, 45, 6, 50]
+                  )
+              ]
+              filter = Logical(Logical.AND, filters=filters)
+              return self.protocol.index(request, response, format=format, filter=filter)
+
+"""
+
 __all__ = ['comparison', 'featureid', 'logical', 'spatial']
 
 class Filter(object):
+
+    """Base filter classe. Filters implemented in submodules of the
+    ``mapfish.lib.filters`` module inherit from this class. Filter subclasses
+    implement the ``to_sql_expr()`` method, this method returns an SQLAlchemy
+    filter expression.
+
+    """
     def __init__(self):
         raise NotImplementedError('Filter cannot be instantiated')
 
