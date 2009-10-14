@@ -51,7 +51,7 @@ setup(name                 = 'mapfish',
       keywords             = 'pylons wsgi framework sqlalchemy geojson shapely GIS',
       author               = 'Camptocamp',
       url                  = 'http://www.mapfish.org',
-      description          = 'MapFish web framework',
+      description          = 'The MapFish web-mapping framework.',
       classifiers          = [
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
@@ -74,7 +74,7 @@ setup(name                 = 'mapfish',
         mf-model = mapfish.commands:MapFishModelCommand
         mf-layer = mapfish.commands:MapFishLayerCommand
         """,
-    long_description           = """
+      long_description           = """
         MapFish
         =======
 
@@ -110,8 +110,6 @@ setup(name                 = 'mapfish',
         MapFish can be installed with `Easy Install
         <http://peak.telecommunity.com/DevCenter/EasyInstall>`_ by typing::
 
-        > easy_install mapfish
-
-        Dependant packages are automatically installed.
+            > easy_install mapfish
         """
 )
