@@ -42,7 +42,7 @@ if sys.version_info < (2, 5):
 
 
 setup(name                 = 'mapfish',
-      version              = '1.2dev',
+      version              = '1.3dev',
       license              = 'LGPLv3',
       install_requires     = requirements,
       zip_safe             = False,
@@ -102,7 +102,7 @@ setup(name                 = 'mapfish',
         Current status
         --------------
 
-        MapFish 1.2dev described in this page is the current stable version.
+        MapFish 1.3dev described in this page is the current stable version.
 
         Download and Installation
         -------------------------
