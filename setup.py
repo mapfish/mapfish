@@ -53,18 +53,18 @@ setup(name                 = 'mapfish',
       url                  = 'http://www.mapfish.org',
       description          = 'The MapFish web-mapping framework.',
       classifiers          = [
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: GNU Library or Lesser General Public License (LGPL)',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
-        'Framework :: MapFish',
+        'Framework :: Pylons',
         'Topic :: Scientific/Engineering :: GIS',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
         'Topic :: Internet :: WWW/HTTP :: WSGI',
-        'Topic :: Internet :: Software Development :: Libraries :: Python Modules',
+        'Topic :: Software Development :: Libraries :: Python Modules',
         ],
       entry_points         = """
         [paste.paster_create_template]
@@ -74,42 +74,42 @@ setup(name                 = 'mapfish',
         mf-model = mapfish.commands:MapFishModelCommand
         mf-layer = mapfish.commands:MapFishLayerCommand
         """,
-      long_description           = """
-        MapFish
-        =======
+      long_description      = """
+      MapFish
+      =======
 
-        MapFish is a Pylons-based web framework with GIS orientations.
+      MapFish is a Pylons-based web framework with GIS orientations.
 
-        MapFish provides:
+      MapFish provides:
 
         * a geometry type which is to be used when mapping PostGIS tables
-        with SQLAlchemy
+          with SQLAlchemy
 
         * a paster command to generate model and controller mode
-        corresponding to layers (PostGIS tables) defined in a configuration
-        file
+          corresponding to layers (PostGIS tables) defined in a 
+          configuration file
 
         * an implementation of a RESTful protocols for creating, reading,
-        updating, and deleting geographic objects (features)
+          updating, and deleting geographic objects (features)
 
-        MapFish relies on the geojson and shapely packages, see
-        http://gispython.org.
+      MapFish relies on the geojson and shapely packages, see
+      http://gispython.org.
 
-        MapFish projects are Pylons projects, the project developer
-        therefore fully benefits from the power of Pylons and its
-        companion components (SQLAlchemy, Mako, etc.).
+      MapFish projects are Pylons projects, the project developer
+      therefore fully benefits from the power of Pylons and its
+      companion components (SQLAlchemy, Mako, etc.).
 
-        Current status
-        --------------
+      Current status
+      --------------
 
-        MapFish 1.3dev described in this page is the current stable version.
+      MapFish 1.3dev described in this page is the current stable version.
 
-        Download and Installation
-        -------------------------
+      Download and Installation
+      -------------------------
 
-        MapFish can be installed with `Easy Install
-        <http://peak.telecommunity.com/DevCenter/EasyInstall>`_ by typing::
+      MapFish can be installed with `Easy Install
+      <http://peak.telecommunity.com/DevCenter/EasyInstall>`_ by typing::
 
-            > easy_install mapfish
-        """
+          > easy_install mapfish
+      """
 )
