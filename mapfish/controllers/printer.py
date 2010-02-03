@@ -73,11 +73,12 @@ class PrinterController(WSGIController):
         ret = exe.wait()
         if ret == 0:
             response.status = 200
-            response.headers['Content-Type'] = 'application/json; charset=utf-8'
             result = self._addURLs(result)
             if request.params.has_key('var'):
+                response.headers['Content-Type'] = 'text/javascript; charset=utf-8'
                 return 'var ' + request.params['var'].encode('utf8') + '=' + result + ';'
             else:
+                response.headers['Content-Type'] = 'application/json; charset=utf-8'
                 return result
         else:
             response.status = 500
