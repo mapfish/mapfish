@@ -348,8 +348,8 @@ class Protocol(object):
                 obj = self.Session.query(self.mapped_class).get(feature.id)
             if obj is None:
                 obj = self.mapped_class()
-                obj.geometry = asShape(feature.geometry)
                 create = True
+            obj.geometry = asShape(feature.geometry)
             for key in feature.properties:
                 obj[key] = feature.properties[key]
             if create:
