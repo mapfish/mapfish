@@ -109,49 +109,53 @@ class MapFishControllerCommand(Command):
     def command(self):
         """Main command to create a mapfish controller"""
         try:
-            fileOp = FileOp(source_dir=os.path.join(
-                os.path.dirname(__file__), 'templates'))
-            try:
-                name, directory = fileOp.parse_path_name_args(self.args[0])
-            except:
-                raise BadCommand('No egg_info directory was found')
-
             # read layers.ini
             config = ConfigParser()
             config.read(['layers.ini'])
             # check passed layer is in layers.ini
-            if not config.has_section(name):
+            sectionName = self.args[0]
+            if not config.has_section(sectionName):
                 raise BadCommand(
-                    'There is no layer named %s in layers.ini' % name)
+                    'There is no layer section named %s in layers.ini' % \
+                    sectionName)
 
             # get layer parameters
-            singularName = config.get(name, 'singular')
-            pluralName = config.get(name, 'plural')
-            epsg = config.get(name, 'epsg')
+            singular = config.get(sectionName, 'singular')
+            plural = config.get(sectionName, 'plural')
+            epsg = config.get(sectionName, 'epsg')
+
+            fileOp = FileOp(source_dir=os.path.join(
+                os.path.dirname(__file__), 'templates'))
+            try:
+                singularName, singularDirectory = \
+                    fileOp.parse_path_name_args(singular)
+                pluralName, pluralDirectory = \
+                    fileOp.parse_path_name_args(plural)
+            except Exception, e:
+                raise BadCommand('No egg_info directory was found')
 
             # check the name isn't the same as the package
             basePkg = fileOp.find_dir('controllers', True)[0]
-            if basePkg.lower() == name.lower():
+            if basePkg.lower() == pluralName.lower():
                 raise BadCommand(
                     'Your controller name should not be the same as '
                     'the package name %s' % basePkg)
 
             # validate the name
-            name = name.replace('-', '_')
+            name = pluralName.replace('-', '_')
             validateName(name)
 
             # set test file name
-            fullName = os.path.join(directory, name)
+            fullName = os.path.join(pluralDirectory, name)
             if not fullName.startswith(os.sep):
                 fullName = os.sep + fullName
             testName = fullName.replace(os.sep, '_')[1:]
 
             # set template vars
             modName = name
-            fullModName = os.path.join(directory, name)
+            fullModName = os.path.join(pluralDirectory, name)
             contrClass = util.class_name_from_module_name(name)
             modelClass = util.class_name_from_module_name(singularName)
-            modelTabObj = name + '_table'
 
             # setup the controller
             fileOp.template_vars.update(
@@ -161,11 +165,9 @@ class MapFishControllerCommand(Command):
                  'pluralName': pluralName,
                  'contrClass': contrClass,
                  'modelClass': modelClass,
-                 'modelTabObj': modelTabObj,
-                 'basePkg': basePkg,
-                 'epsg': epsg})
+                 'basePkg': basePkg})
             fileOp.copy_file(template='controller.py_tmpl',
-                         dest=os.path.join('controllers', directory),
+                         dest=os.path.join('controllers', pluralDirectory),
                          filename=name,
                          template_renderer=paste_script_template_renderer)
             if not self.options.no_test:
@@ -178,9 +180,8 @@ class MapFishControllerCommand(Command):
                                 "add a map statement to your\n")
             resource_command += ("config/routing.py file in the CUSTOM ROUTES section "
                                  "like this:\n\n") 
-            command = 'map.resource("%s", "%s")\n' % \
-                (singularName, pluralName)
-            resource_command += command
+            resource_command += 'map.resource("%s", "%s")\n' % \
+                    (singularName, pluralName)
 
             print resource_command
 
@@ -222,40 +223,46 @@ class MapFishModelCommand(Command):
     def command(self):
         """Main command to create mapfish model"""
         try:
-            fileOp = FileOp(source_dir=os.path.join(
-                os.path.dirname(__file__), 'templates'))
-            try:
-                name, directory = fileOp.parse_path_name_args(self.args[0])
-            except:
-                raise BadCommand('No egg_info directory was found')
-
             # read layers.ini
             config = ConfigParser()
             config.read(['layers.ini'])
             # check passed layer is in layers.ini
-            if not config.has_section(name):
+            sectionName = self.args[0]
+            if not config.has_section(sectionName):
                 raise BadCommand(
-                    'There is no layer named %s in layers.ini' % name)
+                    'There is no layer section named %s in layers.ini' % \
+                    sectionName)
 
             # get layer parameters
-            singularName = config.get(name, 'singular')
-            table = config.get(name, 'table')
-            epsg = config.get(name, 'epsg')
-            geomColName = config.get(name, 'geomcolumn')
-            if config.has_option(name, 'schema'):
-                schema = config.get(name, 'schema')
+            singular = config.get(sectionName, 'singular')
+            plural = config.get(sectionName, 'plural')
+            table = config.get(sectionName, 'table')
+            epsg = config.get(sectionName, 'epsg')
+            geomColName = config.get(sectionName, 'geomcolumn')
+            if config.has_option(sectionName, 'schema'):
+                schema = config.get(sectionName, 'schema')
             else:
                 schema = None
 
+            fileOp = FileOp(source_dir=os.path.join(
+                os.path.dirname(__file__), 'templates'))
+            try:
+                singularName, singularDirectory = \
+                    fileOp.parse_path_name_args(singular)
+                pluralName, pluralDirectory = \
+                    fileOp.parse_path_name_args(plural)
+            except:
+                raise BadCommand('No egg_info directory was found')
+
             # check the name isn't the same as the package
-            basePkg = fileOp.find_dir('controllers', True)[0]
-            if basePkg.lower() == name.lower():
+            basePkg = fileOp.find_dir('model', True)[0]
+            if basePkg.lower() == pluralName.lower():
                 raise BadCommand(
-                    'Your controller name should not be the same as '
+                    'Your model name should not be the same as '
                     'the package name %s' % basePkg)
 
             # validate the name
-            name = name.replace('-', '_')
+            name = pluralName.replace('-', '_')
             validateName(name)
 
             # set template vars
@@ -272,7 +279,7 @@ class MapFishModelCommand(Command):
                  'basePkg': basePkg,
                  'schema': schema})
             fileOp.copy_file(template='model.py_tmpl',
-                         dest=os.path.join('model', directory),
+                         dest=os.path.join('model', pluralDirectory),
                          filename=name,
                          template_renderer=paste_script_template_renderer)
 
