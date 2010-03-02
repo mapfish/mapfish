@@ -27,9 +27,8 @@ from tempfile import NamedTemporaryFile, gettempdir
 import re
 import simplejson
 
-from routes import url_for
 from pylons.controllers import WSGIController
-from pylons import config, request, response, session
+from pylons import config, request, response, session, url
 from pylons.controllers.util import forward
 
 from paste.fileapp import FileApp
@@ -206,10 +205,10 @@ class PrinterController(WSGIController):
         This method is returning the base URL for accessing the different
         actions of this controller.
         """
-        actionUrl = url_for(action = actionName, id = id)
+        actionUrl = url(controller="printer", action=actionName, id=id)
         if request.params.has_key('url'):
             fullUrl = request.params['url'].encode('utf8')
-            myUrl = url_for(action = fromAction)
+            myUrl = url(controller="printer", action=fromAction)
             if fullUrl == myUrl[1:]:  # support for very short relative URLs
                 return actionUrl[1:]
             if fullUrl.endswith(myUrl):
