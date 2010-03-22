@@ -1,4 +1,4 @@
-How to build and install the MapFish Python library:
+How to build and install the MapFish Python library: 
 
 In the MapFish/server/python/ directory:
   python setup.py egg_info
