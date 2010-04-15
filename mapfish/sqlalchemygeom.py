@@ -98,7 +98,10 @@ class Geometry(TypeEngine):
         return 'GEOMETRY()'
 
     def compare_values(self, x, y):
-        return x.equals(y)
+        t = (x, y)
+        if None not in t:
+            return x.equals(y)
+        return t == (None, None)
 
     def bind_processor(self, dialect):
         # convert value from a geometry object to database
