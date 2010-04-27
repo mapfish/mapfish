@@ -187,13 +187,21 @@ class Protocol(object):
       \**kwargs
           before_create
             a callback function called before a feature is inserted
-            in the database table, the function receives the request
-            and the feature about to be inserted.
+            in the database table, the function receives the request,
+            the feature read from the GeoJSON document sent in the
+            request, and the database object to be updated. The
+            latter is None if this is is an actual insertion.
 
           before_update
             a callback function called before a feature is updated
+            in the database table, the function receives the request,
+            the feature read from the GeoJSON document sent in the
+            request, and the database object to be updated.
+
+          before_delete
+            a callback function called before a feature is deleted
             in the database table, the function receives the request
-            and the feature about to be updated.
+            and the database object about to be deleted.
     """
 
     def __init__(self, Session, mapped_class, readonly=False, **kwargs):
@@ -207,6 +215,9 @@ class Protocol(object):
         self.before_update = None
         if kwargs.has_key('before_update'):
             self.before_update = kwargs['before_update']
+        self.before_delete = None
+        if kwargs.has_key('before_delete'):
+            self.before_delete = kwargs['before_delete']
 
     def _encode(self, objects, request, response):
         """ Return a GeoJSON representation of the passed objects. """
@@ -342,10 +353,10 @@ class Protocol(object):
         for feature in collection.features:
             create = False
             obj = None
-            if self.before_create is not None:
-                self.before_create(request, feature)
             if isinstance(feature.id, int):
                 obj = self.Session.query(self.mapped_class).get(feature.id)
+            if self.before_create is not None:
+                self.before_create(request, feature, obj)
             if obj is None:
                 obj = self.mapped_class()
                 create = True
@@ -376,7 +387,7 @@ class Protocol(object):
         if not isinstance(feature, Feature):
             abort(400)
         if self.before_update is not None:
-            self.before_update(request, feature)
+            self.before_update(request, feature, obj)
         obj.geometry = asShape(feature.geometry)
         for key in feature.properties:
             obj[key] = feature.properties[key]
@@ -391,6 +402,8 @@ class Protocol(object):
         obj = self.Session.query(self.mapped_class).get(id)
         if obj is None:
             abort(404)
+        if self.before_delete is not None:
+            self.before_delete(request, obj)
         self.Session.delete(obj)
         self.Session.commit()
         response.status = 204
