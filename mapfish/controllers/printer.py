@@ -180,6 +180,9 @@ class PrinterController(WSGIController):
 
         #allows to run the process without X11
         cmd.insert(1, "-Djava.awt.headless=true")
+        # Only needed on bgdimf01t
+        #cmd.insert(1, "-Dhttp.proxyHost=www-proxy.admin.ch")
+        #cmd.insert(1, "-Dhttp.proxyPort=8080")
 
         if request.params.has_key('locale'):
             locale = request.params['locale']
