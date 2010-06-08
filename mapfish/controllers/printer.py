@@ -26,6 +26,7 @@ from subprocess import Popen, PIPE
 from tempfile import NamedTemporaryFile, gettempdir
 import re
 import simplejson
+import urlparse
 
 from pylons.controllers import WSGIController
 from pylons import config, request, response, session, url
@@ -206,6 +207,10 @@ class PrinterController(WSGIController):
         actions of this controller.
         """
         actionUrl = url(controller="printer", action=actionName, id=id)
+
+        # in 2.0 we'll support "baseurl" only, so the following code
+        # block will be removed. And the fromAction argument of this
+        # function will also be removed.
         if request.params.has_key('url'):
             fullUrl = request.params['url'].encode('utf8')
             myUrl = url(controller="printer", action=fromAction)
@@ -214,7 +219,10 @@ class PrinterController(WSGIController):
             if fullUrl.endswith(myUrl):
                 return fullUrl[0:-len(myUrl)] + actionUrl
             log.warn("Cannot guess the base URL for " + fullUrl + " (action=" + myUrl + ")")
-        return request.scheme + "://" + request.host + actionUrl
+
+        if request.params.has_key('baseurl'):
+            return request.params['baseurl'].encode('utf8') + actionUrl.split('/')[-1]
+        return urlparse.urlunparse((request.scheme, request.host, actionUrl, None, None, None))
 
     def _addURLs(self, json):
         expr = re.compile('}$')
