@@ -26,10 +26,10 @@ except ImportError:
 
 import sys
 
-
-requirements = ['SQLAlchemy>=0.5.0,<=0.5.99',
+requirements = ['SQLAlchemy>=0.6.1,<=0.6.99',
                 'Pylons>=0.9.7,<=0.9.7.99',
-                'geojson>=1.0,<=1.0.99']
+                'geojson>=1.0,<=1.0.99',
+                'GeoAlchemy>=0.3,<=0.3.99']
 
 # Shapely and Psychopg2 cannot be installed on Windows via python eggs
 if sys.platform != 'win32':
@@ -42,7 +42,7 @@ if sys.version_info < (2, 5):
 
 
 setup(name                 = 'mapfish',
-      version              = '1.3dev',
+      version              = '2.0dev',
       license              = 'LGPLv3',
       install_requires     = requirements,
       zip_safe             = False,
@@ -102,7 +102,7 @@ setup(name                 = 'mapfish',
       Current status
       --------------
 
-      MapFish 1.3dev described in this page is the current stable version.
+      MapFish 2.0dev described in this page is the current stable version.
 
       Download and Installation
       -------------------------

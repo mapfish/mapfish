@@ -1,0 +1,47 @@
+Framework
+*********
+
+MapFish is a flexible and complete framework for building rich web-mapping
+applications. It emphasizes high productivity, and high-quality development. 
+
+MapFish is based on the `Pylons <http://pylonshq.com>`_ Python web framework.
+MapFish extends Pylons with geospatial-specific functionality. For example
+MapFish provides specific tools for creating web services that allow querying
+and editing geographic objects.
+
+MapFish also provides a complete RIA-oriented JavaScript toolbox, a JavaScript
+testing environment, and tools for compressing JavaScript code. The JavaScript
+toolbox is composed of the `Ext <http://extjs.com>`_, `OpenLayers
+<http://www.openlayers.org>`_ , `GeoExt <http://www.geoext.org>`_ JavaScript
+toolkits, and specific components for interacting with MapFish web services.
+
+Forewords
+---------
+
+In the following sections we assume that the MapFish framework is installed in
+a virtual Python environment named ``venv`` and that this virtual environment
+is activated.  See the `installation page <../installation.html>`_ to know how to
+install MapFish and activate the virtual environment.
+
+This documentation provides links to chapters of the `The Definitive Guide To
+Pylons <http://pylonsbook.com/en/1.0/index.html>`_ book. Reading this book is
+highly recommended to anyone considering doing serious development with
+MapFish.
+
+
+Table Of Contents:
+------------------
+
+.. toctree::
+   :maxdepth: 2
+
+   mapfish-application
+   javascript-toolbox
+   webservice
+   customizing-webservices
+   spatial-databases
+
+
+-----------
+
+`API References <../reference/index.html#server>`_

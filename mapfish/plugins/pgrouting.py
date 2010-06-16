@@ -21,12 +21,15 @@
 # SELECT * FROM shortest_path('SELECT gid AS id, node1_id::int4 AS source, node2_id::int4 AS target, 1.0::float8 AS cost FROM lines2', 0, 0, false, false);
 def shortest_path(engine, sql, source_id, target_id,
                   directed = False, has_reverse_cost = False):
-    # return array of: step, vertex_id, edge_id, cost
-
+    """Calculates the shortest path using the Dijkstra algorithm of the library pgrouting.
+    Returns an array of: vertex_id, edge_id, cost
+    
+    see: http://pgrouting.postlbs.org/wiki/Dijkstra
+    """
     return engine.execute("SELECT * FROM \
                            shortest_path('%(sql)s', %(source_id)s, %(target_id)s, \
-                                          %(directed)s, %(has_reverse_cost)s) ORDER BY step"
-                          %{'sql': sql.replace("'", r"\'"),
+                                          %(directed)s, %(has_reverse_cost)s)"
+                          %{'sql': sql.replace("'", r"''"),
                             'source_id': source_id,
                             'target_id': target_id,
                             'directed': directed,

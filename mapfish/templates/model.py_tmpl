@@ -1,22 +1,17 @@
-from sqlalchemy import Column, Table, types
-from sqlalchemy.orm import mapper
+from sqlalchemy import Column, types
 
-from mapfish.sqlalchemygeom import Geometry
+from geoalchemy import GeometryColumn, {{geomType}}
+
 from mapfish.sqlalchemygeom import GeometryTableMixIn
+from {{basePkg}}.model.meta import engine, Base
 
-from {{basePkg}}.model.meta import metadata, engine
-
-{{modelTabObj}} = Table(
-    '{{table}}', metadata,
-    Column('{{geomColName}}', Geometry({{epsg}})),
+class {{modelClass}}(Base, GeometryTableMixIn):
+    __tablename__ = '{{table}}'
+    __table_args__ = {
     {{if schema is not None}}
-    schema='{{schema}}',
+        "schema": '{{schema}}',
     {{endif}}
-    autoload=True, autoload_with=engine)
-
-class {{modelClass}}(GeometryTableMixIn):
-    # for GeometryTableMixIn to do its job the __table__ property
-    # must be set here
-    __table__ = {{modelTabObj}}
-
-mapper({{modelClass}}, {{modelTabObj}})
+        "autoload": True,
+        "autoload_with": engine
+    }
+    {{geomColName}} = GeometryColumn({{geomType}}(dimension=2, srid={{epsg}}))

@@ -26,7 +26,9 @@ from pylons.controllers.util import abort
 
 from shapely.geometry import asShape
 
-from sqlalchemy.sql import select, asc, desc
+from sqlalchemy.sql import asc, desc
+
+from geoalchemy import WKBSpatialElement
 
 from geojson import dumps as _dumps, loads, Feature, FeatureCollection, GeoJSON
 from geojson.codec import PyGFPEncoder
@@ -63,9 +65,10 @@ def dumps(obj, cls=MapFishJSONEncoder, **kwargs):
     # Wrapper for geojson's dumps function.
     return _dumps(obj, cls=cls, **kwargs)
 
-def create_geom_filter(request, mapped_class):
+def create_geom_filter(request, mapped_class, **kwargs):
     """Create MapFish geometry filter based on the request params. Either
-    a box or within or geometry filter, depending on the request params."""
+    a box or within or geometry filter, depending on the request params.
+    Additional named arguments are passed to the spatial filter."""
 
     geom_column = mapped_class.geometry_column()
 
@@ -93,7 +96,8 @@ def create_geom_filter(request, mapped_class):
             geom_column,
             box=box.split(','),
             tolerance=tolerance,
-            epsg=epsg
+            epsg=epsg,
+            **kwargs
         )
     elif 'lon' and 'lat' in request.params:
         # within spatial filter
@@ -103,7 +107,8 @@ def create_geom_filter(request, mapped_class):
             lon=float(request.params['lon']),
             lat=float(request.params['lat']),
             tolerance=tolerance,
-            epsg=epsg
+            epsg=epsg,
+            **kwargs
         )
     elif 'geometry' in request.params:
         # geometry spatial filter
@@ -112,7 +117,8 @@ def create_geom_filter(request, mapped_class):
             geom_column,
             geometry=request.params['geometry'],
             tolerance=tolerance,
-            epsg=epsg
+            epsg=epsg,
+            **kwargs
         )
     return filter
 
@@ -148,10 +154,11 @@ def create_attr_filter(request, mapped_class):
                 )
     return filter
 
-def create_default_filter(request, mapped_class):
-    """ Create MapFish default filter based on the request params."""
+def create_default_filter(request, mapped_class, **kwargs):
+    """ Create MapFish default filter based on the request params. Additional
+    named arguments are passed to the spatial filter."""
 
-    geom_filter = create_geom_filter(request, mapped_class) 
+    geom_filter = create_geom_filter(request, mapped_class, **kwargs) 
     attr_filter = create_attr_filter(request, mapped_class)
 
     if geom_filter is None and attr_filter is None:
@@ -226,7 +233,7 @@ class Protocol(object):
             if isinstance(objects, list):
                 return dumps(
                     FeatureCollection(
-                        [self._filter_attrs(o.toFeature(), request) for o in objects if o.geometry]
+                        [self._filter_attrs(o.toFeature(), request) for o in objects if o.geometry is not None]
                     )
                 )
             else:
@@ -295,7 +302,7 @@ class Protocol(object):
         query = self.Session.query(self.mapped_class).filter(filter)
 
         order_by = self._get_order_by(request)
-        if order_by:
+        if order_by is not None:
             query = query.order_by(order_by)
 
         query = query.limit(limit).offset(offset)
@@ -360,9 +367,7 @@ class Protocol(object):
             if obj is None:
                 obj = self.mapped_class()
                 create = True
-            obj.geometry = asShape(feature.geometry)
-            for key in feature.properties:
-                obj[key] = feature.properties[key]
+            self.__copy_attributes(feature, obj)
             if create:
                 self.Session.add(obj)
             objects.append(obj)
@@ -388,9 +393,7 @@ class Protocol(object):
             abort(400)
         if self.before_update is not None:
             self.before_update(request, feature, obj)
-        obj.geometry = asShape(feature.geometry)
-        for key in feature.properties:
-            obj[key] = feature.properties[key]
+        self.__copy_attributes(feature, obj)
         self.Session.commit()
         response.status = 201
         return self._encode(obj, request, response)
@@ -408,4 +411,15 @@ class Protocol(object):
         self.Session.commit()
         response.status = 204
         return
-
+    
+    def __copy_attributes(self, json_feature, obj):
+        """Updates the passed-in object with the values
+        from the GeoJSON feature."""
+        # create a Shapely geometry from GeoJSON and persist the geometry using WKB
+        shape = asShape(json_feature.geometry)
+        srid = self.mapped_class.geometry_column().type.srid
+        obj.geometry = WKBSpatialElement(buffer(shape.wkb), srid=srid)
+        # also store the Shapely geometry so that we can use it to return the geometry as GeoJSON
+        obj.geometry.shape = shape
+        for key in json_feature.properties:
+            obj[key] = json_feature.properties[key]

@@ -1,0 +1,5 @@
+mapfish.lib.filters.comparison
+==============================
+
+.. automodule:: mapfish.lib.filters.comparison
+   :members:

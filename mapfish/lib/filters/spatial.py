@@ -19,14 +19,16 @@
 
 from mapfish.lib.filters import Filter
 
-from sqlalchemy.sql import func, and_
-
 from geojson import loads, GeoJSON
-
 
 from shapely.geometry import asShape
 from shapely.geometry.point import Point
 from shapely.geometry.polygon import Polygon
+
+from geoalchemy import WKBSpatialElement
+from geoalchemy.functions import functions
+
+from mapfish.sqlalchemygeom import within_distance
 
 class Spatial(Filter):
     """Spatial filter.
@@ -37,14 +39,19 @@ class Spatial(Filter):
 
       geom_column
           the Column object corresponding to the geometry
-          column.
+          column (contains the database column type).
 
       \**kwargs
           epsg
             the EPSG code of the lon, lat or box values, see
             below.
+            
+          additional_params
+            additional parameters used for the database function
+            call (currently only used for Oracle)
 
-          for Spatial.BOX filter:
+
+          For Spatial.BOX filter:
 
           box
             a list of coordinates representing the bounding
@@ -55,7 +62,8 @@ class Spatial(Filter):
             region, is expressed in the units associated with
             the projection system of the lon/lat coordinates.
         
-          for Spatial.WITHIN filter:
+        
+          For Spatial.WITHIN filter:
 
           lon
             the x coordinate of the center of the search
@@ -72,7 +80,8 @@ class Spatial(Filter):
             region, is expressed in the units associated with
             the projection system of the lon/lat coordinates.
 
-          for Spatial.GEOMETRY filter:
+
+          For Spatial.GEOMETRY filter:
             
           geometry
             the geometry to search in, formatted in a GeoJSON
@@ -97,6 +106,7 @@ class Spatial(Filter):
             self.epsg = self.values['epsg']
         else:
             self.epsg = self.geom_column.type.srid
+        self.additional_params = self.values.get('additional_params', None)
 
     def to_sql_expr(self):
         if self.type == self.BOX:
@@ -109,16 +119,19 @@ class Spatial(Filter):
             factory = lambda ob: GeoJSON.to_instance(ob)
             geometry = loads(self.values['geometry'], object_hook=factory)
             geometry = asShape(geometry)
-                       
+        
         if self.epsg != self.geom_column.type.srid:
-            geom_column = func.transform(self.geom_column, self.epsg)
+            geom_column = functions.transform(self.geom_column, self.epsg)
         else:
             geom_column = self.geom_column
 
         tolerance = self.values['tolerance']
-        pg_geometry = func.geomfromtext(geometry.wkt, self.epsg)
-        return and_(func.expand(pg_geometry, tolerance).op('&&')(geom_column),
-                    func.distance(geom_column, pg_geometry) <= tolerance)
+        wkb_geometry = WKBSpatialElement(buffer(geometry.wkb), self.epsg)
+        
+        if self.additional_params is None:
+            return within_distance(geom_column, wkb_geometry, tolerance)
+        else:
+            return within_distance(geom_column, wkb_geometry, tolerance, self.additional_params)
 
     def __box_to_geometry(self):
         coords = map(float, self.values['box'])

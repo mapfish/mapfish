@@ -1,0 +1,97 @@
+Setting up a MapFish application
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Creating a MapFish application
+------------------------------
+
+The MapFish framework provides a command for automatically generating MapFish
+applications. To create a MapFish application named ``HelloWorld`` use::
+    
+    (venv) $ paster create -t mapfish HelloWorld
+
+Most people would use `Mako <http://www.makotemplates.org/>`_  as the template
+engine, and `SQLAlchemy <http://www.sqlalchemy.org/>`_ as the Object Relational
+Mapper in their MapFish applications. So answer ``mako`` (the default) to the first
+question and ``True`` to the second question. To run the command in a
+non-interactive way you will use::
+
+    (venv) $ paster create --no-interactive -t mapfish HelloWorld sqlalchemy=True 
+
+.. note:: 
+
+    Pure Pylons applications are created with the ``paster create -t pylons``
+    command. When using ``paster create -t mapfish`` we tell ``paster`` to use
+    ``mapfish`` as opposed to ``pylons`` as the application template. In practise
+    the MapFish framework applies the ``pylons`` template before applying the
+    ``mapfish`` template. This is why any MapFish application is also a Pylons
+    application.
+
+The main directories and files in the ``HelloWorld`` directory are:
+
+``development.ini`` and ``test.ini``
+    The application's main configuration files.
+
+``layers.ini``
+    The configuration file where MapFish layers (web services) are configured.
+    The usage of the file will be detailed in a further section (:ref:`layer.ini <layer-ini-2-0>`) of this
+    documentation.
+
+``helloworld``
+    The main application directory, its name depends on the application name
+    you gave as the argument of the ``paster create`` command.
+
+Now let's look at the main application directory (``helloworld``):
+
+``controllers``
+    This directory is where controllers are written. Controllers typically
+    handle HTTP requests, load or save the data from the model, and send 
+    back HTTP responses (to the browser).
+
+``model``
+    This directory is where the model is defined. More specifically this is
+    where the database objects are defined, using SQLAlchemy.
+
+``public``
+    This directory includes the application's static files, i.e. HTML, images,
+    CSS, JavaScript, etc.
+
+``templates``
+    This directory is where (Mako) templates are stored.
+
+``tests``
+    This directory is where you can put automated tests for the application.
+
+``lib``
+    This directory is where you can put code shared by mutiple controllers,
+    third-party code, etc.
+
+.. hint::
+    Recommended reading: `The Definitive Guide to Pylons - Chapter 3
+    <http://pylonsbook.com/en/1.0/exploring-pylons.html>`_.
+
+Serving a MapFish application
+-----------------------------
+
+You can use the Paste HTTP server to execute a MapFish application. For
+example, use the following to make the Paste HTTP server serve the
+``HelloWorld`` application::
+
+    (venv) $ cd HelloWorld
+    (venv) $ paster serve --reload development.ini
+
+The ``--reload`` option make the Paste server monitor all Python modules used
+by the ``HelloWorld`` application and reload itself automatically if any of them is
+modified. This is useful during development.
+
+By default MapFish (and Pylons) applications are served on port 5000. You can
+change by editing the ``development.ini`` configuration file.
+
+If you visit http://localhost:5000 in your web browser you should see the
+`Welcome to Pylons` page.
+
+To stop the Paste server, use Ctrl+C on Unix and Ctrl+D on Windows.
+
+.. hint::
+    Recommended reading: `The Definitive Guide to Pylons - Chapter 3
+    <http://pylonsbook.com/en/1.0/exploring-pylons.html>`_.
+    

@@ -244,6 +244,21 @@ class MapFishModelCommand(Command):
             else:
                 schema = None
 
+            # get geometry type
+            if not config.has_option(sectionName, 'geomtype'):
+                geomtype = 'Geometry'
+            else:
+                raw_geomtype = config.get(sectionName, 'geomtype')
+                # check if the value is valid (geometries supported by GeoAlchemy)
+                valid_types = ['Geometry', 'Point', 'Curve', 'LineString', 'Polygon',
+                                'MultiPoint', 'MultiLineString', 'MultiPolygon', 'GeometryCollection']
+                
+                if raw_geomtype in valid_types:
+                    geomtype = raw_geomtype
+                else:
+                    raise BadCommand('Geometry type "%s" is unknown, valid values are: %s' 
+                                        % (raw_geomtype, valid_types))
+
             fileOp = FileOp(source_dir=os.path.join(
                 os.path.dirname(__file__), 'templates'))
             try:
@@ -267,15 +282,14 @@ class MapFishModelCommand(Command):
 
             # set template vars
             modelClass = util.class_name_from_module_name(singularName)
-            modelTabObj = name + '_table'
 
             # setup the model
             fileOp.template_vars.update(
                 {'modelClass': modelClass,
-                 'modelTabObj': modelTabObj,
                  'table': table,
                  'epsg': epsg,
                  'geomColName': geomColName,
+                 'geomType': geomtype,
                  'basePkg': basePkg,
                  'schema': schema})
             fileOp.copy_file(template='model.py_tmpl',

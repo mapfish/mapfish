@@ -1,0 +1,5 @@
+mapfish.lib.filters.logical
+===========================
+
+.. automodule:: mapfish.lib.filters.logical
+   :members:

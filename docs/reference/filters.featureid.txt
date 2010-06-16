@@ -1,0 +1,5 @@
+mapfish.lib.filters.featureid
+=============================
+
+.. automodule:: mapfish.lib.filters.featureid
+   :members:

@@ -1,0 +1,5 @@
+mapfish.sqlalchemygeom
+======================
+
+.. automodule:: mapfish.sqlalchemygeom
+   :members:

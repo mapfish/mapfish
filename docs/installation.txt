@@ -1,0 +1,74 @@
+.. _installation_2_0_:
+
+Installation
+************
+
+Installing system dependencies
+------------------------------
+
+On Unix, Python version 2.5 or 2.6 and the Python development files must be
+installed.
+
+.. note::
+    On Debian-based systems one can use ``apt-get install python2.5
+    python2.5-dev`` to install Python 2.5 and its development files.
+    Geos and Postgres/Postgis are also required:  ``sudo apt-get install libgeos-3.0.0 postgresql postgis postgresql-8.3-postgis``
+
+On Windows `Python 2.5 <http://www.python.org/download/releases/2.5.4/>`_, and
+the `Python for Windows extensions <http://sourceforge.net/projects/pywin32/>`_
+must be installed.
+
+For Windows, we assume in the rest of this page that Python 2.5 is installed in
+``C:\Python25``.
+
+Installing MapFish
+------------------
+
+To install MapFish, `download <http://www.mapfish.org/downloads/go-mapfish-framework-2.0.py>`_ the installation script, and execute it from a terminal.
+
+On a Unix system::
+
+    $ python go-mapfish-framework-2.0.py --no-site-packages env
+
+On a Windows system::
+
+    C:\> C:\Python25\python.exe go-mapfish-framework-2.0.py --no-site-packages env
+
+This command creates a virtual Python environment named ``env`` and installs
+MapFish and its dependencies into it.
+
+.. note::
+    The so-called `go` script actually installs two Python eggs for MapFish:
+
+     - the egg ``mapfish`` for the server framework
+     - the egg ``mapfish.plugin.client`` for the Javascript toolbox
+
+Now activate the virtual environment.
+
+On a Unix system::
+
+    $ source env/bin/activate
+
+On a Windows system::
+
+    C:\> env\Scripts\activate.bat
+
+You command prompt should now look like this::
+
+    (env) $
+
+To check that MapFish is correctly installed, enter::
+
+    (env) $ paster create --list-templates
+
+and check that the output is::
+
+    Available templates:
+    basic_package:   A basic setuptools-enabled package
+    mapfish:         MapFish application template
+    mapfish_client:  MapFish client plugin template
+    paste_deploy:    A web application deployed through paste.deploy
+    pylons:          Pylons application template
+    pylons_minimal:  Pylons minimal application template
+
+MapFish is installed, congratulations!

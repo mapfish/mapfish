@@ -1,0 +1,53 @@
+Installing the JavaScript toolbox
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+MapFish provides another application template for installing the MapFish JavaScript
+toolbox in the application, this template is named ``mapfish_client``.
+
+.. note::
+    You can use ``paster create --list-templates`` to get a list of all
+    available application templates.
+
+To install the JavaScript toolbox in the ``HelloWorld`` application execute the
+following command in the directory including the ``HelloWorld`` directory::
+
+    (venv) $ paster create -t mapfish_client HelloWorld
+
+You can safely answer ``y`` when you asked whether the ``favicon.ico`` and
+``index.html`` files can be overwritten. It means those two files will be
+replaced by those in the ``mapfish_client`` template, which is what we want.
+
+You can now visit http://localhost:5000 again. You should get an example page,
+with an `OpenStreetMap <http://www.openstreetmap.org/>`_ map.
+
+Let's now look at what the ``paster create -t mapfish_client`` command does.
+In addition to replacing the ``favicon.ico`` and ``index.html`` file the
+command creates three new directories in the application's ``public`` directory.
+
+``mfbase``
+    This directory contains the JavaScript toolbox. It includes sub-directories
+    for the `Ext <http://extjs.com>`_, `OpenLayers
+    <http://www.openlayers.org>`_, `GeoExt <http://www.geoext.org>`_, and
+    MapFish Client toolkits.
+
+``app``
+    This directory contains static files specific to the application. It includes a
+    ``js`` directory, into which you can put the JavaScript code specific to
+    the application. The ``mapfish_client`` template installs a default JavaScript
+    application, which is implemented in the ``helloworld_init.js`` and
+    ``helloworld_layout.js`` files. You can add other directories like ``css``
+    and ``img`` in this ``app`` directory.
+
+``tests``
+    This directory includes the `Test.AnotherWay
+    <http://www.openjsan.org/doc/a/ar/artemkhodush/>`_ JavaScript testing
+    framework, with a test example in ``app/TheObvious.html``. MapFish
+    encourages JavaScript developpers to write tests.
+
+To learn how to use the JavaScript libraries composing the toolbox consult the
+following documentations:
+
+* `OpenLayers docs <http://docs.openlayers.org/>`_
+* `GeoExt docs <http://www.geoext.org/docs.html>`_
+
+Look also at the `various API docs <../reference/index.html#client>`_.

@@ -1,0 +1,39 @@
+API References
+==============
+
+Client
+------
+
+* `MapFish and OpenLayers combined API docs
+  <http://www.mapfish.org/apidoc/1.2/files/mapfish/MapFish-js.html>`_
+* `GeoExt API docs <http://www.geoext.org/lib/index.html>`_
+
+Server
+------
+
+Geometry type
+
+.. toctree::
+   :maxdepth: 1
+   
+   sqlalchemygeom
+
+Protocol implementation
+
+.. toctree::
+   :maxdepth: 1
+
+   protocol 
+
+Filtering API
+
+.. toctree::
+   :maxdepth: 1
+
+   filters
+   filters.comparison
+   filters.featureid
+   filters.logical
+   filters.spatial
+
+

@@ -7,7 +7,8 @@
 # plural*: a plural name representing the layer
 # table*: the name of the table in the database
 # epsg*: the geometry column's EPSG code
-# geomcolumn*: the name of the table's geometry colum
+# geomcolumn*: the name of the table's geometry column
+# geomtype: the geometry type of the geometry column (default: Geometry)
 # schema: the name of the schema hosting the table
 
 # Example:
@@ -18,4 +19,5 @@
 #table=users
 #epsg=4326
 #geomcolumn=the_geom
+#geomtype=Point
 #schema=my_schema

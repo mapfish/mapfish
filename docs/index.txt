@@ -1,0 +1,21 @@
+Mapfish 2.0
+************
+
+Getting started
+---------------
+
+.. toctree::
+   :maxdepth: 1
+
+   installation
+   quickstart
+
+Main docs
+---------
+
+.. toctree::
+   :maxdepth: 1
+
+   framework/index
+   protocol
+   reference/index

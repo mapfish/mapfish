@@ -1,0 +1,835 @@
+Using spatial databases with MapFish
+************************************
+
+Since release 2.0 MapFish uses the `SQLAlchemy <http://www.sqlalchemy.org/>`_ extension 
+`GeoAlchemy <http://www.geoalchemy.org/>`_ that provides support for geospatial databases. 
+By using GeoAlchemy, MapFish can also be used with all database systems supported by GeoAlchemy.
+
+The following document is going to describe how to set up the databases and how to
+use them.		 
+
+Using PostgreSQL/PostGIS
+========================
+
+Installation
+------------
+
+If you followed the `installation guide <../installation.html>`_, then you already
+have installed PostgreSQL/PostGIS and you can skip this section. If not, run the 
+following command from a terminal to install `PostgreSQL <http://www.postgresql.org/>`_, 
+`PostGIS <http://www.postgis.org/>`_ and the required library `GEOS <http://trac.osgeo.org/geos/>`_::
+
+	$ sudo apt-get install libgeos-3.0.0 postgresql postgis postgresql-8.3-postgis
+
+Further information about installing PostGIS can be found in the `PostGIS documentation 
+<http://postgis.refractions.net/docs/ch02.html>`_.
+
+Setting up a spatially-enabled database
+----------------------------------------
+
+Creating a spatially-enabled database is slightly different from creating an ordinary database. Run
+the following commands to create the database ``gis``::
+
+	sudo su postgres
+	createdb -E UNICODE gis
+	createlang plpgsql gis
+	psql -d gis -f /usr/share/postgresql-8.3-postgis/lwpostgis.sql
+	psql -d gis -f /usr/share/postgresql-8.3-postgis/spatial_ref_sys.sql
+	psql -d gis -c "SELECT postgis_full_version()"
+	exit
+
+The last query will inform you about the version of your PostGIS installation.
+
+In most cases you do not want to access your database from a web application as ``root``. The following 
+commands create a user ``www-data`` and grant access rights to this user for the database ``gis``::
+
+	sudo su postgres
+	createuser -P www-data
+	psql gis
+	grant all on database gis to "www-data";
+	grant select on spatial_ref_sys to "www-data";
+	grant all on geometry_columns to "www-data";
+	\q
+	exit
+
+.. hint::
+
+	Depending on if your user should be allowed to create tables, to insert/update rows or just
+	to read, you may want to adjust the privileges (see the `PostgreSQL documentation 
+	<http://www.postgresql.org/docs/8.3/interactive/sql-grant.html>`_ for further 
+	information). 
+
+Now it is time to create tables in your database. You can either let SQLAlchemy/GeoAlchemy do
+that for you (see :ref:`setup-app`) or you can manually create tables (see `Creating a Spatial Table 
+<http://postgis.refractions.net/docs/ch04.html#Create_Spatial_Table>`_ in the PostGIS documentation).
+
+You can also use the tool `shp2pgsql <http://postgis.refractions.net/docs/ch04.html#shp2pgsql_usage>`_
+to create a table from a Shapefile. For example to create the table for this countries Shapefile 
+(:download:`countries.zip <_static/countries.zip>`), you would have to do this::
+
+	unzip countries.zip
+	sudo su postgres
+	shp2pgsql -W utf8 -s 4326 countries.shp  countries | psql -d gis
+	exit
+
+And to check that everything is ok, we can query the row count. Additionally we need to grant 
+the access to this table to user ``www-data`` in order to allow access from MapFish server in a web environment::
+
+	sudo su postgres
+	psql gis
+	\d
+	select count(1) from countries;
+	GRANT ALL ON countries TO "www-data";
+	\q
+	exit
+	
+Configuration
+--------------
+
+Once the database is set up, you only have to change the database connection string in the 
+configuration file of your MapFish application. Open your configuration file, for example 
+``development.ini``, and replace the line::
+
+    sqlalchemy.url = sqlite:///%(here)s/development.db
+
+by this one::
+
+    sqlalchemy.url = postgresql://www-data:www-data@localhost/gis
+
+Using MySQL
+============
+
+Installation
+------------
+
+On Debian-based systems, MySQL can be installed with::
+	
+	$ sudo apt-get install mysql-server mysql-client
+	
+.. hint::
+	More information about installing MySQL can be found in the `MySQL manual
+	<http://dev.mysql.com/doc/refman/5.5/en/installing.html>`_.
+	
+You will also have to install a Python driver for MySQL. Run the following command 
+inside the virtual environment to install the library `mysql-python 
+<http://pypi.python.org/pypi/MySQL-python/>`_::
+
+	(venv) $ easy_install mysql-python
+	
+
+Setting up a spatially-enabled database
+----------------------------------------
+
+For MySQL setting up a spatial database is the same as setting up an ordinary database::
+
+	mysql -u root -p
+	create database gis;
+	quit
+	
+.. note::
+	When creating a database, or directly when creating a table, you can specify the 
+	`storage engine <http://dev.mysql.com/doc/refman/5.5/en/storage-engines.html>`_ 
+	(MyISAM/InnoDB/..) that should be used for the tables. Note that currently only
+	MyISAM uses a `R-tree <http://en.wikipedia.org/wiki/R-tree>`_ for spatial indexes that
+	optimize spatial queries (see `Optimizing Spatial Analysis 
+	<http://dev.mysql.com/doc/refman/5.5/en/optimizing-spatial-analysis.html>`_ in the MySQL
+	manual).
+	
+To create a database user that can be used for accessing the database from a web
+application, execute the following statements::
+
+	mysql -u root -p
+	create user 'www-data' identified by 'www-data';
+	grant all on gis.* to 'www-data';
+	quit
+	
+Tables with geometry columns can be created like any other table using the `geometry type 
+<http://dev.mysql.com/doc/refman/5.5/en/mysql-spatial-datatypes.html>`_ as column data type
+(see `Creating Spatial Columns <http://dev.mysql.com/doc/refman/5.5/en/creating-spatial-columns.html>`_ 
+in the MySQL manual), for example::
+
+	mysql -u root -p
+	use gis;
+	CREATE TABLE points (id INTEGER AUTO_INCREMENT, 
+		name VARCHAR(40), 
+		geom POINT NOT NULL,
+		SPATIAL INDEX(geom), 
+		PRIMARY KEY(id));
+	quit
+
+.. note::
+	If you want to use a `spatial index <http://dev.mysql.com/doc/refman/5.5/en/creating-spatial-indexes.html>`_
+	for your geometry column, the column must be declared as ``NOT NULL``.
+
+Configuration
+--------------
+
+Set the database connection string in the configuration file of your MapFish application 
+(for example ``development.ini``) by replacing the line::
+
+    sqlalchemy.url = sqlite:///%(here)s/development.db
+
+by this one::
+
+    sqlalchemy.url = mysql://www-data:www-data@localhost/gis
+
+Limitations
+------------
+
+*	MySQL does not support coordinate system transformations for geometries. All 
+	your spatial data must be in the same spatial reference system.
+*	Not all methods of the *OpenGIS® Simple Features Specifications For SQL* are supported by MySQL,
+	for example ``distance()`` or ``buffer()`` are not part of the stable release. A list of these functions can be found
+	`here <http://dev.mysql.com/doc/refman/5.5/en/functions-that-create-new-geometries-from-existing-ones.html#spatial-operators>`_.
+	Other functions only operate on the minimum bounding rectangle (MBR) of the geometries, a list of 
+	these functions can be found in `the MySQL manual <http://dev.mysql.com/doc/refman/5.5/en/functions-that-test-spatial-relationships-between-geometries.html>`_.
+	Because of that, features queried through the `MapFish Protocol <../protocol.html>`_ 
+	are also selected using the MBR.
+
+Using SQLite/Spatialite
+=======================
+
+Installation
+------------
+
+Installation of Spatialite
+"""""""""""""""""""""""""""""""""
+
+Spatialite requires the libraries `GEOS <http://trac.osgeo.org/geos/>`_ and `PROJ4 
+<http://proj.osgeo.org/>`_, which in most cases you will have already installed
+together with PostGIS::
+	
+	$ sudo apt-get install libgeos-c1 proj
+	
+.. note::
+	
+	Spatialite expects libgeos 3.1.1, but it can also be used with any 3.0.x release. You just have to
+	create a symbolic link::
+	
+		sudo ln /usr/lib/libgeos-3.0.0.so /usr/lib/libgeos-3.1.1.so
+	
+Now download the precompiled Spatialite library ``libspatialite`` from the `Spatialite download page
+<http://www.gaia-gis.it/spatialite/binaries.html>`_ and unzip the archive to ``/usr/local/lib/libspatialite`` or 
+into a folder of your convenience::
+
+	wget http://www.gaia-gis.it/spatialite/libspatialite-linux-x86-2.3.1.tar.gz
+	sudo tar -xvf libspatialite-linux-x86-2.3.1.tar.gz -C /usr/local/lib/
+	sudo mv /usr/local/lib/libspatialite-* /usr/local/lib/libspatialite
+
+.. hint::
+
+	On Ubuntu 9.10+ you can install the Spatialite library as package ``libspatialite2`` directly 
+	from the repositories. 
+
+.. note::
+	
+	The precompiled libraries for Spatialite only work on 32-bit systems, if you are using a 64-bit system
+	you will have to compile by yourself. To do so, download the source code for ``libspatialite-amalgamation``
+	from the `Spatialite website <http://www.gaia-gis.it/spatialite/sources.html>`_. Make sure that you
+	also have installed the package ``libgeos-dev``. Unzip the source archive and compile by using the following commands
+	(you may want to change the ``prefix`` path, the compiled library will be copied there)::
+	
+		./configure --prefix=/home/c2c/libspatialite --with-geos-lib=/usr/lib --with-proj-lib=/usr/lib
+		make install
+		
+	If you are receiving the error message ``cannot find -lstdc++``, you may have to create a 
+	symbolic link for this library::
+		
+		sudo ln /usr/lib/libstdc++.so.6 /usr/lib/libstdc++.so
+		
+	Further information about compiling ``libspatialite`` can be found here:
+	`How to build libspatialite <http://www.gaia-gis.it/spatialite/how_to_build_libspatialite.html>`_.
+		
+
+Installation of pysqlite2
+""""""""""""""""""""""""""
+
+Even though Python 2.5+ contains the SQLite driver `pysqlite2 <http://trac.edgewall.org/wiki/PySqlite>`_,
+you have to compile it by yourself. The Spatialite library is used in SQLite as extension, and by default
+loading external extensions is disabled in *pysqlite2*. 
+
+To compile *pysqlite2* you will have to install the SQLite header files::
+
+	sudo apt-get install libsqlite3-dev
+
+Download the *pysqlite2* source code from `pysqlite2 - Downloads 
+<http://code.google.com/p/pysqlite/downloads/list?can=3&q=*.tar.gz>`_ and unzip it into your 
+MapFish virtual environment.
+
+Then open the file ``setup.cfg`` and comment out the line ``define=SQLITE_OMIT_LOAD_EXTENSION``::
+
+	[build_ext]
+	#define=
+	#include_dirs=/usr/local/include
+	#library_dirs=/usr/local/lib
+	libraries=sqlite3
+	#define=SQLITE_OMIT_LOAD_EXTENSION
+	
+Now you can compile and setup *pysqlite2* with::
+
+	(venv) $ python setup.py install
+	
+.. note::
+
+    If you running into ``Segmentation Fault`` errors using this build, you can try to do
+    a ``static build``. This will download the latest SQLite3 amalgation file and link it 
+    internally::
+
+        (venv) $ python setup.py build_static install
+
+Setting up a spatially-enabled database
+----------------------------------------
+
+Creating a database can be done using ``spatialite-gui`` or by using the CLI client ``spatialite``. In
+the following we will use ``spatialite``, but you can also use ``spatialite-gui`` to execute the commands.
+
+.. hint::
+
+	You can get ``spatialite-gui`` from `the Spatialite website <http://www.gaia-gis.it/spatialite/binaries.html>`_,
+	also take a look at the `Quickguide for spatialite-gui
+	<http://www.gaia-gis.it/spatialite/spatialite-gui-notes.pdf>`_ (PDF).
+
+First you have to download the package ``spatialite-tools`` from `Spatialite Downloads
+<http://www.gaia-gis.it/spatialite/binaries.html>`_ and
+the script ``init_spatialite-2.3.sql`` from `Spatialite Ressources
+<http://www.gaia-gis.it/spatialite/resources.html>`_. The scripts creates the ``geometry_columns`` and 
+``spatial_ref_sys`` metadata tables and also inserts a collection of spatial reference systems.
+
+Start the Spatialite client by calling::
+
+	spatialite gis.sqlite
+
+This will create the file ``gis.sqlite``, if it does not exist already. Then execute the script 
+``init_spatialite-2.3.sql``::
+
+	.read init_spatialite-2.3.sql ASCII
+	
+Now you can create a table with a geometry column.  This is done in two steps: First we create a plain SQLite 
+table without the geometry column, and then we add the geometry column using the function 
+`AddGeometryColumn() <http://www.gaia-gis.it/spatialite-2.3.0/spatialite-sql-2.3.0.html#p16>`_::
+
+	CREATE TABLE points (id INTEGER PRIMARY KEY AUTOINCREMENT, name VARCHAR(40));
+	SELECT AddGeometryColumn('points', 'geom', 4326, 'POINT', 2);
+
+.. hint::
+
+	You can also create a table from a Shapefile with ``.loadshp`` (see also
+	`Creating a new SpatiaLite db and populating it 
+	<http://www.gaia-gis.it/spatialite/spatialite-tutorial-2.3.1.html#t3.2>`_)::
+		
+		.loadshp countries Countries utf-8
+		
+	And you can even execute queries directly on Shapefiles without copying the data into a table 
+	(see also `Performing SQL queries directly on shapefiles
+	<http://www.gaia-gis.it/spatialite/spatialite-tutorial-2.3.1.html#t6>`_)::
+	
+		CREATE VIRTUAL TABLE virtual_countries USING VirtualShape('/home/c2c/data/countries', utf-8, 4326);
+		select count(*) from virtual_countries where 
+			MBRWithin(Geometry, GeomFromText('POLYGON((0 0, 40 0, 40 40, 0 40, 0 0))', 4326));
+			
+	Currently only read operations are supported, but still ``virtual tables`` are a good option
+	to publish a Shapefile with MapFish.
+			
+Configuration
+--------------
+
+When using ``spatialite-gui`` and ``spatialite`` the Spatialite library is automatically 
+loaded as extension. But when connecting to a Spatialite database using a ordinary SQLite driver,
+you have to load the Spatialite library manually.
+
+In MapFish, database connections are managed by SQLAlchemy. Every time SQLAlchemy opens a new
+connection to a Spatalite database, the Spatialite library must be loaded. This can be done by 
+setting up a `PoolListener <http://www.sqlalchemy.org/docs/reference/sqlalchemy/interfaces.html#sqlalchemy.interfaces.PoolListener>`_.
+
+Open the file ``model/__init__.py`` and modify the method ``init_model(engine)``, so that
+it looks like this::
+
+	# ...
+	
+	from sqlalchemy.dialects.sqlite.base import SQLiteDialect
+	from sqlalchemy.interfaces import PoolListener
+	
+	# ...
+
+	def init_model(engine):
+	    sm = orm.sessionmaker(autoflush=True, autocommit=False, bind=engine)
+	
+	    meta.engine = engine
+	    meta.Session = orm.scoped_session(sm)
+	    
+	    if isinstance(engine.dialect, SQLiteDialect):
+	        class SpatialiteConnectionListener(PoolListener):
+	            def connect(self, dbapi_con, con_record):
+	                dbapi_con.enable_load_extension(True)
+	                dbapi_con.execute("select load_extension('/usr/local/lib/libspatialite/lib/libspatialite.so')")
+	                dbapi_con.enable_load_extension(False)
+	                
+	        engine.pool.add_listener(SpatialiteConnectionListener()) 
+		
+		# ...
+
+Now you just have to set the database connection string in the configuration file of your MapFish application 
+(for example ``development.ini``) by replacing the line::
+
+    sqlalchemy.url = sqlite:///%(here)s/development.db
+
+by this one::
+
+    sqlalchemy.url = sqlite:////home/c2c/data/gis.sqlite
+
+.. hint::
+
+    The number of slashs to the right of ``sqlite:`` depends on if you are using a relative or
+    absolute path, see also `SQLite: Connect Strings 
+    <http://www.sqlalchemy.org/docs/reference/dialects/sqlite.html#connect-strings>`_.
+
+Using Oracle
+=======================
+
+Installation 
+-------------
+
+The Python driver `cx_Oracle <http://cx-oracle.sourceforge.net/>`_ requires an Oracle client or 
+server installation. If your MapFish application is running on the same system as your 
+Oracle database, you can skip the section :ref:`instant-client`.
+
+.. note::
+    
+    The installation of Oracle database server software is not covered in this tutorial,
+    please refer to the `Oracle Database Documentation <http://www.oracle.com/pls/db112/portal.portal_db?selected=11&frame=>`_.
+    
+    For guidance on installing Oracle on Debian based systems, take a look at these two tutorials:
+    
+    - `Installing Oracle 11gR2 on Ubuntu 9.10 <http://mikesmithers.wordpress.com/2010/03/14/installing-oracle-11gr2-on-ubuntu-9-10/>`_
+    - `Installing Oracle 11gR1 on Ubuntu 8.10 Intrepid Ibex <http://www.pythian.com/news/1355/installing-oracle-11gr1-on-ubuntu-810-intrepid-ibex/>`_
+    
+.. _instant-client:
+
+Installation of Oracle Instant Client
+""""""""""""""""""""""""""""""""""""""
+
+The easiest way to get an Oracle Client is installing *Oracle Instant Client*. Download the following 
+two packages for your operating system from `Instant Client Downloads <http://www.oracle.com/technology/software/tech/oci/instantclient/index.html>`_:
+
+- Instant Client Package - Basic
+- Instant Client Package - SDK
+
+In the following we are using RPM files for an installation on a Debian based system.
+
+First install the required packages ``alien`` and ``libaio1``::
+
+    sudo apt-get install alien libaio1
+
+Install the two RPM packages::
+
+    sudo alien -i oracle-instantclient11.2-basic-11.2.0.1.0-1.i386.rpm
+    sudo alien -i oracle-instantclient11.2-devel-11.2.0.1.0-1.i386.rpm
+    
+To add the installed libraries to the system search path, create the file 
+``/etc/ld.so.conf.d/oracle.conf`` and insert the path to your installation, for example::
+
+    /usr/lib/oracle/11.2/client/lib/    
+
+Then run ``ldconfig`` to update the library cache::
+
+    sudo ldconfig
+    ldconfig -p | grep oracle
+    
+The last command should print out the Oracle library files.
+
+Installation of cx_Oracle
+"""""""""""""""""""""""""
+
+Installer files for various operating systems and Oracle versions can be found on the `cx_Oracle website
+<http://cx-oracle.sourceforge.net/>`_. In the following we are building cx_Oracle from source. To do so, download 
+the source code archive from `cx_Oracle - Files <http://sourceforge.net/projects/cx-oracle/files/>`_.
+
+Before building cx_Oracle three environment variables have to be set::
+
+    export ORACLE_HOME=/usr/lib/oracle/11.2/client/
+    export LD_LIBRARY_PATH=$ORACLE_HOME/lib
+    export PATH=$ORACLE_HOME/bin:$PATH
+    
+Then start the setup inside your virtual environment::
+
+    (venv) $ python setup.ini install    
+    
+To test if the installation was succesfull, start a Python interpreter and try to
+import the cx_Oracle module::
+
+    (venv) $ python -i
+    >>> import cx_Oracle
+    >>>
+    
+.. hint::
+
+    If you are using `Buildout <http://www.buildout.org/>`_ you may want to take a look at 
+    the recipe `gocept.cxoracle <http://pypi.python.org/pypi/gocept.cxoracle>`_, which automatically
+    installs cx_Oracle and Oracle Instant Client.
+
+Configuration
+-------------
+
+When using cx_Oracle inside MapFish, the environment variables ``ORACLE_HOME`` and ``LD_LIBRARY`` have to be set 
+before the cx_Oracle module is used from SQLAlchemy. You can do this in the file ``config/environment.py`` before
+the SQLAlchemy ``engine`` is created from the configuration::
+
+     def load_environment(global_conf, app_conf):
+     
+        # ...
+        
+        # Set the evironment variables required for cx_Oracle
+        os.environ['ORACLE_HOME'] = '/usr/lib/oracle/11.2/client/'
+        os.environ['LD_LIBRARY'] = '/usr/lib/oracle/11.2/client/lib'
+        
+        # Setup the SQLAlchemy database engine
+        engine = engine_from_config(config, 'sqlalchemy.')
+        init_model(engine)
+     
+Then set the database connection string in your Pylons configuration file ``development.ini``::
+
+    sqlalchemy.url = oracle://www-data:www-data@localhost:1521/gis   
+
+Notes about the Oracle dimension information array
+--------------------------------------------------
+
+Oracle requires a *Dimension Information Array (DIMINFO)* in its geometry metadata table 
+for every spatial column (see `Oracle® Spatial User's Guide and Reference: Geometry Metadata Views
+<http://download.oracle.com/docs/cd/B12037_01/appdev.101/b10826/sdo_objrelschema.htm#i1001937>`_).
+
+If you are creating your tables with SQLAlchemy/GeoAlchemy (see :ref:`setup-app`), you will have to
+specify a DIMINFO in your model files. GeoAlchemy then will make an entry in the view
+``USER_SDO_GEOM_METADATA`` (see also `Oracle® Spatial User's Guide and Reference: DIMINFO
+<http://download.oracle.com/docs/cd/B12037_01/appdev.101/b10826/sdo_objrelschema.htm#i1010905>`_). 
+
+Example definition (``model/places.py``)::
+
+    from sqlalchemy import Column, types
+    from sqlalchemy.schema import Sequence
+    
+    from geoalchemy import GeometryColumn, Point, GeometryDDL
+    
+    from mapfish.sqlalchemygeom import GeometryTableMixIn
+    from mapfishsample.model.meta import engine, Base
+    
+    diminfo = "MDSYS.SDO_DIM_ARRAY("\
+                "MDSYS.SDO_DIM_ELEMENT('LONGITUDE', -180, 180, 0.000000005),"\
+                "MDSYS.SDO_DIM_ELEMENT('LATITUDE', -90, 90, 0.000000005)"\
+                ")"
+    
+    class Place(Base, GeometryTableMixIn):
+        __tablename__ = 'places'
+        id = Column(types.Integer, Sequence('place_id_seq'), primary_key=True)
+        name = Column(types.String(40))
+        
+        the_geom = GeometryColumn(Point(dimension=2, srid=4326, diminfo=diminfo))
+    
+    GeometryDDL(Place.__table__)
+
+For Oracle MapFish in general uses the operator ``SDO_WITHIN_DISTANCE`` for spatial filter queries. 
+If the filter geometry (Lat/Lon, BBox or arbitrary geometry) uses a different SRID, the geometry column 
+has to be reprojected to this SRID. In this case the Oracle function ``SDO_GEOM.WITHIN_DISTANCE`` has to be
+used which either requires dimension information arrays or a tolerance value. These parameters have to be 
+set on custom filters for the methods ``index()`` and ``show()`` inside the controller classes.
+
+Example (``controllers/places.py``)::
+
+    class PlacesController(BaseController):
+        # ..
+    
+        def index(self, format='json'):
+            """GET /: return all features."""
+            filter = create_default_filter(request, Place, additional_params={'tol': '0.005'})
+            return self.protocol.index(request, response, format=format, filter=filter)
+    
+        def show(self, id, format='json'):
+            """GET /id: Show a specific feature."""
+            filter = create_default_filter(request, Place, additional_params={'tol': '0.005'})
+            return self.protocol.show(request, response, id, format=format, filter=filter)
+            
+        # ..
+
+The tolerance value will be passed to ``SDO_GEOM.WITHIN_DISTANCE``. Alternatively you can set
+a DIMINFO for the reprojected geometry column and the filter query using the keywords ``dim1`` and 
+``dim2``.
+
+Note that this tolerance is not the one used in the `MapFish Protocol
+<../protocol.html>`_ to specify a distance in which features should be queried.
+
+.. hint::
+
+    More information about using Oracle can be found in the `GeoAlchemy documentation 
+    <http://geoalchemy.org/usagenotes.html#notes-for-oracle>`_.
+
+Notes about using a tolerance value for MapFish Web Services in Oracle
+----------------------------------------------------------------------
+
+Requests to a MapFish web service can contain a tolerance parameter, which specifies within which distance
+features should be queried. Usually the unit of this value is the unit associated with the coordinate system
+in use (for example degree for ``EPSG:4326``). But for geodetic coordinate systems (like ``EPSG:4326``) 
+Oracle uses meter as unit. You have to keep this in mind when developing applications for Oracle.
+
+If you want to use a different unit, you can set it as parameter in your controller files. This 
+parameter is passed to the database function call without further checks.
+
+Example (``controllers/places.py``)::
+
+        # ..
+    
+        def index(self, format='json'):
+            """GET /: return all features."""
+            filter = create_default_filter(request, Place, additional_params={'params': 'unit=KM'})
+            return self.protocol.index(request, response, format=format, filter=filter)
+    
+        def show(self, id, format='json'):
+            """GET /id: Show a specific feature."""
+            filter = create_default_filter(request, Place, additional_params={'params': 'unit=KM'})
+            return self.protocol.show(request, response, id, format=format, filter=filter)
+            
+        # ..
+
+Valid units are listed in the view ``SDO_DIST_UNITS``.
+
+Sperical Mercator (900913)
+===========================
+
+For many map tiles (including OpenStreetMap and Google Maps) `Sperical Mercator 
+<http://docs.openlayers.org/library/spherical_mercator.html>`_ (EPSG: 900913) is used as projection. For Spatialite and PostGIS
+in releases prior to PostGIS 1.4, *Sperical Mercator* is not supported by default and you will receive 
+an error message like the following, when you try to work with geometries using *Sperical Mercator* as 
+spatial reference system (SRS)::
+
+	(InternalError) AddToPROJ4SRSCache: Cannot find SRID (900913) in spatial_ref_sys [..]
+		
+To enable support for *Sperical Mercator*, you first will have to update the library ``proj``, because on Ubuntu ``proj`` comes without datum shifting
+files which are required for transformations with the *Sperical Mercator* projection. Run the following commands
+to update your installation (see also `Notes on proj 
+<http://docs.djangoproject.com/en/dev/ref/contrib/gis/install/#id43>`_)::
+
+	wget http://download.osgeo.org/proj/proj-datumgrid-1.4.tar.gz
+	mkdir nad
+	cd nad
+	tar xzf ../proj-datumgrid-1.4.tar.gz
+	nad2bin null < null.lla
+	sudo cp null /usr/share/proj
+
+Then for **PostGIS** run the following statements to insert the reference definition in PostGIS' ``spatial_ref_sys`` table::
+
+	sudo su postgres
+	psql gis
+	INSERT INTO spatial_ref_sys (srid, auth_name, auth_srid, srtext, proj4text) VALUES (900913, 'EPSG', 900913, 'PROJCS["unnamed",GEOGCS["unnamed ellipse",DATUM["unknown",SPHEROID["unnamed",6378137,0]], PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]], PROJECTION["Mercator_2SP"],PARAMETER["standard_parallel_1",0],PARAMETER["central_meridian",0],PARAMETER["false_easting",0], PARAMETER["false_northing",0],UNIT["Meter",1],EXTENSION["PROJ4","+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs"]]', '+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs');
+	\q
+	exit
+
+The same can be done for **Spatialite**::
+
+	spatialite gis.sqlite
+	INSERT INTO spatial_ref_sys (srid, auth_name, auth_srid, ref_sys_name, proj4text) VALUES (900913, 'EPSG', 900913, 'Google Sperical Mercator', '+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs');
+	.quit
+	
+Table mapping
+=============
+
+Declarative and non-declarative mapping
+---------------------------------------
+
+With SQLAlchemy table mappings can be configured either by defining a table and a class
+separetly (non-declarative) or by doing this at once (declarative). MapFish supports both ways.
+The following two examples show the mapping for a table ``spots``, one time as non-declarative and
+one time as declarative mapping.
+
+**Non-declarative mapping**:
+
+.. code-block:: python
+
+	from sqlalchemy import Column, Table, Integer, Numeric
+	from sqlalchemy.orm import mapper
+	
+	from geoalchemy import (Geometry, GeometryColumn,
+        GeometryDDL, GeometryExtensionColumn)
+	
+	from mapfish.sqlalchemygeom import GeometryTableMixIn  
+	
+	from mapfishsample.model.meta import metadata
+	
+	# table definition
+	spots_table = Table('spots', metadata,
+		Column('spot_id', Integer, primary_key=True),
+		Column('spot_height', Numeric(asdecimal=False)),
+		GeometryExtensionColumn('spot_location', Geometry(2)))
+
+	# class definition
+	class Spot(GeometryTableMixIn):
+	    __table__ = spots_table
+	    
+	    def __init__(self, spot_id=None, spot_height=None, spot_location=None):
+	        self.spot_id = spot_id
+	        self.spot_height = spot_height
+	        self.spot_location = spot_location
+	
+	# set up the mapping between table and class
+	mapper(Spot, spots_table, properties={
+	            'spot_location': GeometryColumn(spots_table.c.spot_location,
+	                                            comparator=PGComparator)})
+	
+	# register table for DDL extension, so that it can be created from SQLAlchemy
+	GeometryDDL(spots_table)
+	
+	
+**Declarative mapping**:
+
+.. code-block:: python
+
+	from sqlalchemy import Column, types
+
+	from geoalchemy import GeometryColumn, Geometry
+	
+	from mapfish.sqlalchemygeom import GeometryTableMixIn
+	from mapfishsample.model.meta import engine, Base
+	
+	class Spot(Base, GeometryTableMixIn):
+	    __tablename__ = 'spots'
+	
+	    spot_id = Column(Integer, primary_key=True)
+	    spot_height = Column(Numeric(asdecimal=False))
+	    spot_location = GeometryColumn(Point(2), comparator=PGComparator)
+	
+	GeometryDDL(Spot.__table__)
+
+.. hint::
+
+	See also `Creating Table, Class and Mapper All at Once Declaratively
+	<http://www.sqlalchemy.org/docs/ormtutorial.html#creating-table-class-and-mapper-all-at-once-declaratively>`_.
+
+Geometry column properties
+--------------------------
+
+When using ``paster mf-layer`` or ``paster mf-model``, MapFish creates a default configuration
+for the geometry column of your table. You may want to customize this configuration to your needs.
+
+**Example configuration for** ``model/spots.py``:
+
+.. code-block:: python
+
+	# [..]
+	spot_location = GeometryColumn(
+		Point(dimension=2, srid=4326, spatial_index=True), 
+		comparator=PGComparator,
+		nullable=False)
+	# [..]
+
+``dimension=2``
+
+The dimension of the geometry (default: 2).
+
+``srid=4326``
+
+The spatial reference system (SRS) of the geometry column as EPSG code (default: 4326).
+
+``spatial_index=True``
+
+Indicates if a *spatial index* is created for the geometry column (default: True).
+
+.. hint::
+
+	Spatialite does not automatically make use of the spatial index when executing queries, you
+	explicitly have to access the spatial index in your queries, see  `Spatial Index: using SQLite's R*Tree
+	<http://www.gaia-gis.it/spatialite/spatialite-tutorial-2.3.1.html#t8>`_.
+
+``comparator=PGComparator``
+
+You only have to set this option, when you want to use a database specific function (like `AsKML` in PostGIS) on
+a geometry column in a SQLAlchemy query (for example ``session.query(Spot).filter(Spot.geom.kml == '..'``). Following 
+comparators are available:
+
+* PostGIS: *geoalchemy.postgis.PGComparator*
+* MySQL: *geoalchemy.mysql.MySQLComparator*
+* Spatialite: *geoalchemy.spatialite.SQLiteComparator*
+* Oracle: *geoalchemy.oracle.OracleComparator*
+
+``nullable=False``
+
+Indicates if ``null`` values can be inserted into the geometry column (default: True).
+
+.. note::
+
+	When using MySQL with a spatial index, the parameter ``nullable`` is ignored, because MySQL
+	requires a ``NOT NULL`` constraint for spatial indexed columns.
+
+
+.. _setup-app:
+
+Using 'paster setup-app' to create your database tables
+==========================================================
+
+When setting up a Pylons application, you often have to create database tables to run the 
+application. SQLAlchemy/GeoAlchemy can take over that task for you, so that all your tables
+are created just by calling ``paster setup-app config.ini``.
+
+The following steps describe how to configure your application.
+
+#.	**Table mapping**
+	
+	All columns that you want to be created for a table, must be enlisted in the table 
+	definition. 
+	
+	*Example:* ``model/Point.py``
+
+	.. code-block:: python
+		
+		from sqlalchemy import Column, types
+		
+		from geoalchemy import GeometryColumn, Point, GeometryDDL
+		
+		from mapfish.sqlalchemygeom import GeometryTableMixIn
+		from mapfishsample.model.meta import metadata, Base
+		
+		
+		class Point(Base, GeometryTableMixIn):
+		    __tablename__ = 'points'
+		    
+		    id = Column(types.Integer, primary_key=True)
+		    name = Column(types.String(30), default = 'foo')
+		    the_geom = GeometryColumn(Point(dimension=2, srid=4326))
+		
+		GeometryDDL(Point.__table__)
+		
+	Note the last line ``GeometryDDL(Point.__table__)``, this makes sure that
+	GeoAlchemy creates the geometry field of the table.
+
+#.	**websetup.py**
+	
+	When calling ``paster setup-app config.ini``, the method ``setup_app()`` inside the 
+	file ``[your_app]/websetup.py`` is executed. By default the method ``setup_app()``
+	already contains the command ``metadata.create_all()`` that creates the tables. You 
+	just have to import your model classes.
+	
+	*Example:*  ``websetup.py``
+	
+	.. code-block:: python
+	
+		"""Setup the MapFishSample application"""
+		import logging
+		
+		from mapfishsample.config.environment import load_environment
+		from mapfishsample.model import meta
+		
+		# Import the model classes you want to create the tables for 
+		from mapfishsample.model import points
+		
+		log = logging.getLogger(__name__)
+		
+		def setup_app(command, conf, vars):
+		    """Place any commands to setup mapfishsample here"""
+		    load_environment(conf.global_conf, conf.local_conf)
+		
+		    # Create the tables if they don't already exist
+		    meta.metadata.create_all(bind=meta.engine)
+
+#. **paster setup-app**
+	
+	Finally to setup your application, run the following command inside the virtual environment:
+	
+	.. code-block:: bash
+	
+		(venv) $ paster setup-app [your_config].ini
