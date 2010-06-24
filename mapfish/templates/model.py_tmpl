@@ -3,7 +3,7 @@ from sqlalchemy import Column, types
 from geoalchemy import GeometryColumn, {{geomType}}
 
 from mapfish.sqlalchemygeom import GeometryTableMixIn
-from {{basePkg}}.model.meta import engine, Base
+from {{basePkg}}.model.meta import Session, Base
 
 class {{modelClass}}(Base, GeometryTableMixIn):
     __tablename__ = '{{table}}'
@@ -12,6 +12,6 @@ class {{modelClass}}(Base, GeometryTableMixIn):
         "schema": '{{schema}}',
     {{endif}}
         "autoload": True,
-        "autoload_with": engine
+        "autoload_with": Session.bind
     }
-    {{geomColName}} = GeometryColumn({{geomType}}(dimension=2, srid={{epsg}}))
+    {{geomColName}} = GeometryColumn({{geomType}}(srid={{epsg}}))

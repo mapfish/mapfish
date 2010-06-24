@@ -27,7 +27,7 @@ except ImportError:
 import sys
 
 requirements = ['SQLAlchemy>=0.6.1,<=0.6.99',
-                'Pylons>=0.9.7,<=0.9.7.99',
+                'Pylons>=1.0,<=1.0.99',
                 'geojson>=1.0,<=1.0.99',
                 'GeoAlchemy>=0.3,<=0.3.99']
 

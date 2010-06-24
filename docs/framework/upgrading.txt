@@ -1,0 +1,105 @@
+Upgrading
+---------
+
+This section provides information for upgrading a MapFish application from
+MapFish 1.2 to MapFish 2.0
+
+Pylons 1.0
+~~~~~~~~~~
+
+MapFish 1.2 is based on Pylons 0.9.7, and MapFish 2.0 is based on Pylons 1.0.
+So to upgrade an application from MapFish 1.2 to MapFish 2.0 it is first needed
+to upgrade from Pylons 0.9.7 to Pylons 1.0. For this refer to the `Pylons 1.0
+Upgrading page <http://pylonshq.com/docs/en/1.0/upgrading/>`_, and follow the
+provided indications.
+
+.. note:
+    MapFish 2.0 depending on Pylons 1.0, you will run into dependency issues if
+    you attempt to upgrade to Pylons 0.10. So it is recommended not to attempt
+    it.
+
+The Pylons 1.0 Uprading page doesn't include information for upgrading
+the model and base controller. Here's additional information:
+
+* The ``model.meta`` module no longer stores reference to the ``engine`` and
+  ``metadata`` objects. Edit ``model/meta.py`` and remove these files::
+  
+      from sqlalchemy import MetaData
+      engine = None
+      metadata = MetaData()
+
+* The ``model.meta`` module now creates the ``scoped session`` and the
+  SQLAlchemy ``declarative base`` class. Edit ``model/meta.py``, replace the
+  ``Session = None`` line with::
+    
+      Session = scoped_session(sessionmaker())
+
+  and add the following line at the end of the file::
+
+      Base = declarative_base()
+
+* The ``init_model`` function of the ``model`` module is no longer responsible
+  for creating the ``Session``. Edit ``model/__init__.py`` and remove these
+  three lines from the body of the ``init_model`` function::
+
+      sm = orm.sessionmaker(bind=engine)
+      meta.engine = engine
+      meta.Session = orm.scoped_session(sm)
+
+  The ``init_model`` function now just configures the (already-created)
+  Session. Add the following statement to the body of ``init_model``::
+
+      Session.configure(bind=engine)
+
+The application should now be upgraded to Pylons 1.0, and it is now time to do
+MapFish-specific adjusments.
+
+MapFish 2.0
+~~~~~~~~~~~
+
+MapFish 2.0 is based on `GeoAlchemy <http://geoalchemy.org>`_. GeoAlchemy
+provides extensions to SQLAlchemy for use with spatial databases. MapFish 2.0
+no longer defines the ``Geometry`` type, the one defined by GeoAlchemy is to be
+used instead.
+
+With MapFish 1.2 the ``paster mf-layer`` command generated model files that
+looked like this::
+
+    from sqlalchemy import Column, Table, types
+    from sqlalchemy.orm import mapper
+
+    from mapfish.sqlalchemygeom import Geometry
+    from mapfish.sqlalchemygeom import GeometryTableMixIn
+
+    from blonay.model.meta import metadata, engine
+
+    users_table = Table(
+        'users', metadata,
+        Column('the_geom', Geometry(4326)),
+        schema='my_schema',
+        autoload=True, autoload_with=engine)
+
+    class User(GeometryTableMixIn):
+        # for GeometryTableMixIn to do its job the __table__ property
+        # must be set here
+        __table__ = users_table
+
+    mapper(User, users_table)
+
+With MapFish 2.0 the same ``user`` model looks like this::
+
+    from sqlalchemy import Column, types
+
+    from geoalchemy import GeometryColumn, Point
+
+    from mapfish.sqlalchemygeom import GeometryTableMixIn
+    from sample.model.meta import Session, Base
+
+    class User(Base, GeometryTableMixIn):
+        __tablename__ = 'users'
+        __table_args__ = {
+            "schema": 'my_schema',
+            "autoload": True,
+            "autoload_with": Session.bind
+        }
+        the_geom = GeometryColumn(Point(srid=4326))
