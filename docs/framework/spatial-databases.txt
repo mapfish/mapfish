@@ -452,7 +452,7 @@ Before building cx_Oracle three environment variables have to be set::
     
 Then start the setup inside your virtual environment::
 
-    (venv) $ python setup.ini install    
+    (venv) $ python setup.py install    
     
 To test if the installation was succesfull, start a Python interpreter and try to
 import the cx_Oracle module::
