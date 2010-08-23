@@ -6,7 +6,6 @@ from pylons import config
 from authkit.authorize.pylons_adaptors import authorize, authorized
 from authkit.permissions import ValidAuthKitUser
 from authkit.authorize import NotAuthorizedError
-import simplejson
 
 import sys
 import os
