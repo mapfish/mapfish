@@ -20,8 +20,6 @@
 import logging
 log = logging.getLogger(__name__)
 
-import decimal, datetime
-
 from pylons.controllers.util import abort
 
 from shapely.geometry import asShape
@@ -30,8 +28,7 @@ from sqlalchemy.sql import asc, desc
 
 from geoalchemy import WKBSpatialElement
 
-from geojson import dumps as _dumps, loads, Feature, FeatureCollection, GeoJSON
-from geojson.codec import PyGFPEncoder
+from geojson import Feature, FeatureCollection, loads, GeoJSON
 
 from mapfish.lib.filters import Filter
 from mapfish.lib.filters.spatial import Spatial
@@ -49,21 +46,6 @@ PARAM_TO_FILTER_TYPE = {
     "like": Comparison.LIKE,
     "ilike": Comparison.ILIKE
 }
-
-class MapFishJSONEncoder(PyGFPEncoder):
-    # SQLAlchemy's Reflecting Tables mechanism uses decimal.Decimal
-    # for numeric columns and datetime.date for dates. simplejson does
-    # not know how to deal with objects of those types. This class provides
-    # a simple encoder that can deal with these kinds of objects.
-
-    def default(self, obj):
-        if isinstance(obj, (decimal.Decimal, datetime.date, datetime.datetime)):
-            return str(obj)
-        return PyGFPEncoder.default(self, obj)
-
-def dumps(obj, cls=MapFishJSONEncoder, **kwargs):
-    # Wrapper for geojson's dumps function.
-    return _dumps(obj, cls=cls, **kwargs)
 
 def create_geom_filter(request, mapped_class, **kwargs):
     """Create MapFish geometry filter based on the request params. Either
@@ -226,19 +208,6 @@ class Protocol(object):
         if kwargs.has_key('before_delete'):
             self.before_delete = kwargs['before_delete']
 
-    def _encode(self, objects, request, response):
-        """ Return a GeoJSON representation of the passed objects. """
-        if objects is not None:
-            response.content_type = "application/json"
-            if isinstance(objects, list):
-                return dumps(
-                    FeatureCollection(
-                        [self._filter_attrs(o.toFeature(), request) for o in objects if o.geometry is not None]
-                    )
-                )
-            else:
-                return dumps(self._filter_attrs(objects.toFeature(), request))
-
     def _filter_attrs(self, feature, request):
         """ Remove some attributes from the feature and set the geometry to None
             in the feature based ``attrs`` and the ``no_geom`` parameters. """
@@ -312,17 +281,6 @@ class Protocol(object):
         else:
             return query
 
-    def index(self, request, response, format='json', filter=None):
-        """ Build a query based on the filter and the request
-        params, send the query to the database, and return a
-        GeoJSON representation of the query results. """
-
-        # only json is supported
-        if format != 'json':
-            abort(404)
-
-        return self._encode(self._query(request, filter), request, response)
-
     def count(self, request, filter=None):
         """ Return the number of records matching the given filter. """
         if not filter:
@@ -331,20 +289,21 @@ class Protocol(object):
             filter = filter.to_sql_expr()
         return str(self.Session.query(self.mapped_class).filter(filter).count())
 
-    def show(self, request, response, id, format='json'):
-        """ Build a query based on the id argument, send the query
-        to the database, and return a GeoJSON representation of the
-        result. """
-
-        # only json is supported
-        if format != 'json':
-            abort(404)
-
-        obj = self.Session.query(self.mapped_class).get(id)
-        if obj is None:
-            abort(404)
-
-        return self._encode(obj, request, response)
+    def read(self, request, filter=None, id=None):
+        """ Build a query based on the filter or the idenfier, send the query
+        to the database, and return a Feature or a FeatureCollection. """
+        ret = None
+        if id is not None:
+            o = self.Session.query(self.mapped_class).get(id)
+            if o is None:
+                abort(404)
+            ret = self._filter_attrs(o.toFeature(), request)
+        else:
+            objs = self._query(request, filter)
+            ret = FeatureCollection(
+                    [self._filter_attrs(o.toFeature(), request) \
+                        for o in objs if o.geometry is not None])
+        return ret
 
     def create(self, request, response, execute=True):
         """ Read the GeoJSON feature collection from the request body and
@@ -375,7 +334,9 @@ class Protocol(object):
             self.Session.commit()
         response.status = 201
         if len(objects) > 0:
-            return self._encode(objects, request, response)
+            features = [o.toFeature() for o in objects \
+                            if o.geometry is not None]
+            return FeatureCollection(features)
         return
 
     def update(self, request, response, id):
@@ -396,7 +357,7 @@ class Protocol(object):
         self.__copy_attributes(feature, obj)
         self.Session.commit()
         response.status = 201
-        return self._encode(obj, request, response)
+        return obj.toFeature()
 
     def delete(self, request, response, id):
         """ Remove the targetted feature from the database """

@@ -16,7 +16,7 @@ from test_protocol import FakeRequest, FakeResponse
 
 from webob.exc import HTTPNotFound
 from exceptions import Exception
-from geojson import loads, FeatureCollection, GeoJSON
+from geojson import Feature, FeatureCollection, GeoJSON
 
 
 # we are using an in-memory database
@@ -100,10 +100,13 @@ class Test(unittest.TestCase):
         request.body = '{"type": "FeatureCollection", "features": [{"type": "Feature", "properties": {"spot_height": 12.0}, "geometry": {"type": "Point", "coordinates": [45, 5]}}]}'
         
         response = FakeResponse()
-        returned_geojson = proto.create(request, response)
-        eq_(returned_geojson,
-            '{"type": "FeatureCollection", "features": [{"geometry": {"type": "Point", "coordinates": [45.0, 5.0]}, "id": 10, "type": "Feature", "bbox": [45.0, 5.0, 45.0, 5.0], "properties": {"spot_height": 12}}]}')
+        collection = proto.create(request, response)
         eq_(response.status, 201)
+        eq_(len(collection.features), 1)
+        feature0 = collection.features[0]
+        eq_(feature0.id, 10)
+        eq_(feature0.geometry.coordinates, (45.0, 5.0))
+        eq_(feature0.properties["spot_height"], 12)
         
         new_spot = session.query(Spot).filter(Spot.spot_height==12.0).one()
         ok_(new_spot is not None)
@@ -123,11 +126,17 @@ class Test(unittest.TestCase):
             {"type": "Feature", "id": ' + str(old_spot.spot_id) + ', "properties": {}, "geometry": {"type": "Point", "coordinates": [1, 1]}}]}'       
         
         response = FakeResponse()
-        returned_geojson = proto.create(request, response)
-        eq_(returned_geojson,
-            '{"type": "FeatureCollection", "features": [{"geometry": {"type": "Point", "coordinates": [45.0, 5.0]}, "id": 10, "type": "Feature", "bbox": [45.0, 5.0, 45.0, 5.0], "properties": {"spot_height": 12}}, {"geometry": {"type": "Point", "coordinates": [1.0, 1.0]}, "id": 2, "type": "Feature", "bbox": [1.0, 1.0, 1.0, 1.0], "properties": {"spot_height": 102.34}}]}')
+        collection = proto.create(request, response)
         eq_(response.status, 201)
-        
+        eq_(len(collection.features), 2)
+        feature0 = collection.features[0]
+        eq_(feature0.id, 10)
+        eq_(feature0.geometry.coordinates, (45.0, 5.0))
+        eq_(feature0.properties["spot_height"], 12)
+        feature1 = collection.features[1]
+        eq_(feature1.id, old_spot.spot_id)
+        eq_(feature1.geometry.coordinates, (1, 1))
+
         new_spot = session.query(Spot).filter(Spot.spot_height==12.0).one()
         ok_(new_spot is not None)
         eq_(session.scalar(new_spot.spot_location.wkt), u'POINT(45 5)')
@@ -159,11 +168,11 @@ class Test(unittest.TestCase):
         request.body = '{"type": "Feature", "id": ' + str(id) + ', "properties": {}, "geometry": {"type": "Point", "coordinates": [1, 1]}}'
         
         response = FakeResponse()
-        returned_geojson = proto.update(request, response, id)
-        eq_(returned_geojson,
-            '{"geometry": {"type": "Point", "coordinates": [1.0, 1.0]}, "id": 1, "type": "Feature", "bbox": [1.0, 1.0, 1.0, 1.0], "properties": {"spot_height": 420.39999999999998}}')
+        feature = proto.update(request, response, id)
         eq_(response.status, 201)
-        
+        eq_(feature.id, 1)
+        eq_(feature.geometry.coordinates, (1.0, 1.0))
+
         spot = session.query(Spot).get(id)
         ok_(spot is not None)
         eq_(session.scalar(spot.spot_location.wkt), u'POINT(1 1)')
@@ -264,20 +273,7 @@ class Test(unittest.TestCase):
         
         eq_(proto.count(request), '3')
         
-        
-    def test_protocol_show(self):
-        """Get a single point by its primary key"""
-        proto = Protocol(session, Spot)
-        
-        request = FakeRequest({})
-        response = FakeResponse()
-        
-        returned_geojson = proto.show(request, response, 1)
-        eq_(returned_geojson,
-            '{"geometry": {"type": "Point", "coordinates": [0.0, 0.0]}, "id": 1, "type": "Feature", "bbox": [0.0, 0.0, 0.0, 0.0], "properties": {"spot_height": 420.39999999999998}}')     
-        eq_(response.status, 0) # note that the return code is set later by Pylons
-        
-        
+
     def test_protocol_count_custom_filter(self):
         """Count all features that match a custom filter"""
         session.add_all([
@@ -313,29 +309,38 @@ class Test(unittest.TestCase):
             )
             
         eq_(proto.count(request, filter=filter), '1')
-        
-    
+
+
+    def test_protocol_read_all(self):
+        """Return all features"""
+        proto = Protocol(session, Spot)
+
+        collection = proto.read(FakeRequest({}))
+        ok_(collection is not None)
+        ok_(isinstance(collection, FeatureCollection))
+        eq_(len(collection.features), 9)
+
+
+    def test_protocol_read_one(self):
+        """Return one feature"""
+        proto = Protocol(session, Spot)
+
+        feature = proto.read(FakeRequest({}), id=1)
+        ok_(feature is not None)
+        ok_(isinstance(feature, Feature))
+        eq_(feature.id, 1)
+        eq_(feature.geometry.coordinates, (0.0, 0.0))
+        eq_(feature.properties["spot_height"], 420.39999999999998)
+        proto = Protocol(session, Spot)
+
+
     @raises(HTTPNotFound)
-    def test_protocol_show_fails(self):
+    def test_protocol_read_one_fails(self):
         """Try to get a single point with a wrong primary key"""
         proto = Protocol(session, Spot)
         
-        proto.show(FakeRequest({}), FakeResponse(), -1)
-        
-        
-    def test_protocol_index(self):
-        """Return all features"""
-        proto = Protocol(session, Spot)
-        returned_geojson = proto.index(FakeRequest({}), FakeResponse())
-        
-        ok_(returned_geojson is not None)
-        
-        factory = lambda ob: GeoJSON.to_instance(ob)
-        features = loads(returned_geojson, object_hook=factory)
+        proto.read(FakeRequest({}), id=-1)
 
-        ok_(isinstance(features, FeatureCollection))
-        eq_(len(features.features), 9)
-        
 
     def test_within_distance(self):
         """Test the Spatialite implementation for within_distance"""

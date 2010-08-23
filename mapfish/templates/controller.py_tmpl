@@ -7,6 +7,7 @@ from {{basePkg}}.model.meta import Session
 
 from mapfish.lib.filters import *
 from mapfish.lib.protocol import Protocol, create_default_filter
+from mapfish.decorators import geojsonify
 
 class {{contrClass}}Controller(BaseController):
     readonly = False # if set to True, only GET is supported
@@ -14,6 +15,7 @@ class {{contrClass}}Controller(BaseController):
     def __init__(self):
         self.protocol = Protocol(Session, {{modelClass}}, self.readonly)
 
+    @geojsonify
     def index(self, format='json'):
         """GET /: return all features."""
         # If no filter argument is passed to the protocol index method
@@ -55,18 +57,24 @@ class {{contrClass}}Controller(BaseController):
         #     filter = and_(default_filter.to_sql_expr(), compare_filter)
         # else:
         #     filter = compare_filter
-        # return self.protocol.index(request, response, format=format, filter=filter)
+        # return self.protocol.read(request, filter=filter)
+        if format != 'json':
+            abort(404)
+        return self.protocol.read(request)
 
-        return self.protocol.index(request, response, format=format)
-
+    @geojsonify
     def show(self, id, format='json'):
         """GET /id: Show a specific feature."""
-        return self.protocol.show(request, response, id, format=format)
+        if format != 'json':
+            abort(404)
+        return self.protocol.read(request, response, id=id)
 
+    @geojsonify
     def create(self):
         """POST /: Create a new feature."""
         return self.protocol.create(request, response)
 
+    @geojsonify
     def update(self, id):
         """PUT /id: Update an existing feature."""
         return self.protocol.update(request, response, id)

@@ -9,9 +9,9 @@ Pylons 1.0
 
 MapFish 1.2 is based on Pylons 0.9.7, and MapFish 2.0 is based on Pylons 1.0.
 So to upgrade an application from MapFish 1.2 to MapFish 2.0 it is first needed
-to upgrade from Pylons 0.9.7 to Pylons 1.0. For this refer to the `Pylons 1.0
-Upgrading page <http://pylonshq.com/docs/en/1.0/upgrading/>`_, and follow the
-provided indications.
+to upgrade that application from Pylons 0.9.7 to Pylons 1.0. For this refer to
+the `Pylons 1.0 Upgrading page <http://pylonshq.com/docs/en/1.0/upgrading/>`_,
+and follow the provided indications.
 
 .. note:
     MapFish 2.0 depending on Pylons 1.0, you will run into dependency issues if
@@ -56,6 +56,9 @@ MapFish-specific adjusments.
 
 MapFish 2.0
 ~~~~~~~~~~~
+
+GeoAlchemy
+^^^^^^^^^^
 
 MapFish 2.0 is based on `GeoAlchemy <http://geoalchemy.org>`_. GeoAlchemy
 provides extensions to SQLAlchemy for use with spatial databases. MapFish 2.0
@@ -103,3 +106,105 @@ With MapFish 2.0 the same ``user`` model looks like this::
             "autoload_with": Session.bind
         }
         the_geom = GeometryColumn(Point(srid=4326))
+
+geojsonify
+^^^^^^^^^^
+
+MapFish 2.0 introduces the ``geojsonify`` decorator for generating GeoJSON.
+
+With MapFish 1.2 the ``paster mf-layer`` command generated controller files
+that looked like this::
+
+    from pylons import request, response, session, tmpl_context as c
+    from pylons.controllers.util import abort, redirect_to
+
+    from myproject.lib.base import BaseController
+    from myproject.model.users import User
+    from myproject.model.meta import Session
+    from myproject.lib.decorators import geojsonify
+
+    from mapfish.lib.filters import *
+    from mapfish.lib.protocol import Protocol, create_default_filter
+
+    class UsersController(BaseController):
+        readonly = False # if set to True, only GET is supported
+
+        def __init__(self):
+            self.protocol = Protocol(Session, User, self.readonly)
+
+        def index(self, format='json'):
+            """GET /: return all features."""
+            return self.protocol.index(request, response, format=format)
+
+        def show(self, id, format='json'):
+            """GET /id: Show a specific feature."""
+            return self.protocol.show(request, response, id)
+
+        def create(self):
+            """POST /: Create a new feature."""
+            return self.protocol.create(request, response)
+
+        def update(self, id):
+            """PUT /id: Update an existing feature."""
+            return self.protocol.update(request, response, id)
+
+        def delete(self, id):
+            """DELETE /id: Delete an existing feature."""
+            return self.protocol.delete(request, response, id)
+
+With MapFish 2.0 the same ``user`` controller looks like this::
+
+    from pylons import request, response, session, tmpl_context as c
+    from pylons.controllers.util import abort, redirect
+
+    from test.lib.base import BaseController
+    from test.model.users import User
+    from test.model.meta import Session
+
+    from mapfish.lib.filters import *
+    from mapfish.lib.protocol import Protocol, create_default_filter
+    from mapfish.decorators import geojsonify
+
+    class UsersController(BaseController):
+        readonly = False # if set to True, only GET is supported
+
+        def __init__(self):
+            self.protocol = Protocol(Session, User, self.readonly)
+
+        @geojsonify
+        def index(self, format='json'):
+            """GET /: return all features."""
+            if format != 'json':
+                abort(404)
+            return self.protocol.read(request)
+
+        @geojsonify
+        def show(self, id, format='json'):
+            """GET /id: Show a specific feature."""
+            if format != 'json':
+                abort(404)
+            return self.protocol.read(request, response, id=id)
+
+        @geojsonify
+        def create(self):
+            """POST /: Create a new feature."""
+            return self.protocol.create(request, response)
+
+        @geojsonify
+        def update(self, id):
+            """PUT /id: Update an existing feature."""
+            return self.protocol.update(request, response, id)
+
+        def delete(self, id):
+            """DELETE /id: Delete an existing feature."""
+            return self.protocol.delete(request, response, id)
+
+Several things to note here:
+
+* Protocols no longer expose ``index`` and ``show`` methods. They expose a
+  single method for reading features: ``read``. So ``read`` is to be used
+  from both the ``index`` and ``show`` actions.
+* The ``index``, ``show``, ``create``, and ``update`` methods no longer
+  return GeoJSON strings. Instead they return objects that can be
+  serialized into GeoJSON strings. This serialization is taken
+  care of by the ``geojsonify`` decorator.
