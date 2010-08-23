@@ -271,7 +271,7 @@ Now you can compile and setup *pysqlite2* with::
 	
 .. note::
 
-    If you running into ``Segmentation Fault`` errors using this build, you can try to do
+    If you are running into ``Segmentation Fault`` errors using this build, you can try to do
     a ``static build``. This will download the latest SQLite3 amalgation file and link it 
     internally::
 
