@@ -34,7 +34,6 @@ requirements = ['SQLAlchemy>=0.6.1,<=0.6.99',
 # Shapely and Psychopg2 cannot be installed on Windows via python eggs
 if sys.platform != 'win32':
     requirements.append('Shapely>=1.0.7,<=1.0.99')
-    requirements.append('psycopg2>=2.0.10,<=2.0.99')
 
 # add dependency on ctypes only for python < 2.5 wich does not embed ctypes
 if sys.version_info < (2, 5):

@@ -34,7 +34,13 @@ def after_install(options, home_dir):
         '--allow-hosts', 'www.mapfish.org',
         'mapfish.plugin.client'])
 
-    if sys.platform == 'win32':
+    if sys.platform != 'win32':
+        # install mapfish egg
+        subprocess.call([join(bin_dir, 'easy_install'),
+            '--index-url', 'http://www.mapfish.org/downloads/%s/pkg',
+            '--allow-hosts', 'www.mapfish.org',
+            'psycopg2'])
+    else:
         import urllib2, cStringIO, zipfile
         try:
             # installation of psycopg2 for windows:
@@ -100,7 +106,7 @@ def generate(filename, version):
     #    textwrap.dedent(after_install % (path, version)))
 
     output = virtualenv.create_bootstrap_script(
-        textwrap.dedent(after_install % (version, version)))
+        textwrap.dedent(after_install % (version, version, version)))
     fp = open(filename, 'w')
     fp.write(output)
     fp.close()
