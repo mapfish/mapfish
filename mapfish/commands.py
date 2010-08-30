@@ -180,6 +180,8 @@ class MapFishControllerCommand(Command):
                                 "add a map statement to your\n")
             resource_command += ("config/routing.py file in the CUSTOM ROUTES section "
                                  "like this:\n\n") 
+            resource_command += ('map.connect("/%s/count", controller="%s", '
+                                 'action="count")\n' % (pluralName, pluralName))
             resource_command += 'map.resource("%s", "%s")\n' % \
                     (singularName, pluralName)
 

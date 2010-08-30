@@ -82,3 +82,7 @@ class {{contrClass}}Controller(BaseController):
     def delete(self, id):
         """DELETE /id: Delete an existing feature."""
         return self.protocol.delete(request, response, id)
+
+    def count(self):
+        """GET /count: Count all features."""
+        return self.protocol.count(request)
