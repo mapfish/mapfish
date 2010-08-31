@@ -530,7 +530,7 @@ For Oracle MapFish in general uses the operator ``SDO_WITHIN_DISTANCE`` for spat
 If the filter geometry (Lat/Lon, BBox or arbitrary geometry) uses a different SRID, the geometry column 
 has to be reprojected to this SRID. In this case the Oracle function ``SDO_GEOM.WITHIN_DISTANCE`` has to be
 used which either requires dimension information arrays or a tolerance value. These parameters have to be 
-set on custom filters for the methods ``index()`` and ``show()`` inside the controller classes.
+set on custom filters for the method ``index()`` inside the controller classes.
 
 Example (``controllers/places.py``)::
 
@@ -540,13 +540,7 @@ Example (``controllers/places.py``)::
         def index(self, format='json'):
             """GET /: return all features."""
             filter = create_default_filter(request, Place, additional_params={'tol': '0.005'})
-            return self.protocol.index(request, response, format=format, filter=filter)
-    
-        def show(self, id, format='json'):
-            """GET /id: Show a specific feature."""
-            filter = create_default_filter(request, Place, additional_params={'tol': '0.005'})
-            return self.protocol.show(request, response, id, format=format, filter=filter)
-            
+            return self.protocol.read(request, filter=filter)
         # ..
 
 The tolerance value will be passed to ``SDO_GEOM.WITHIN_DISTANCE``. Alternatively you can set
@@ -579,13 +573,8 @@ Example (``controllers/places.py``)::
         def index(self, format='json'):
             """GET /: return all features."""
             filter = create_default_filter(request, Place, additional_params={'params': 'unit=KM'})
-            return self.protocol.index(request, response, format=format, filter=filter)
-    
-        def show(self, id, format='json'):
-            """GET /id: Show a specific feature."""
-            filter = create_default_filter(request, Place, additional_params={'params': 'unit=KM'})
-            return self.protocol.show(request, response, id, format=format, filter=filter)
-            
+            return self.protocol.read(request, filter=filter)
+
         # ..
 
 Valid units are listed in the view ``SDO_DIST_UNITS``.

@@ -207,7 +207,7 @@ class Test(unittest.TestCase):
         proto = Protocol(session, Spot)
         request = FakeRequest({})
         
-        request.params['box'] = '-10,-10,10,10'
+        request.params['bbox'] = '-10,-10,10,10'
         eq_(proto.count(request), '4')
         
         request.params['tolerance'] = '1'
@@ -222,7 +222,7 @@ class Test(unittest.TestCase):
         request = FakeRequest({})
         
         # reproject the bbox
-        request.params['box'] = '-12.3364241712925,-10.0036833569465,7.66304367998925,9.9979519038951'
+        request.params['bbox'] = '-12.3364241712925,-10.0036833569465,7.66304367998925,9.9979519038951'
         request.params['epsg'] = '4807'
         request.params['tolerance'] = '0'
         proto.count(request)
@@ -274,28 +274,16 @@ class Test(unittest.TestCase):
         session.commit();
         
         proto = Protocol(session, Lake)
+
+        from sqlalchemy.sql import and_
         
         request = FakeRequest({})
-        request.params['box'] = '-90,40,-80,45'
-        request.params['area'] = 0.1
-        
-        from mapfish.lib.filters.comparison import Comparison
-        from mapfish.lib.filters.logical import Logical
+        request.params['bbox'] = '-90,40,-80,45'
         
         filter = create_geom_filter(request, Lake)
         
-        compare_filter = None
-        if "area" in request.params:
-            compare_filter = Comparison(
-                Comparison.GREATER_THAN_OR_EQUAL_TO,
-                Lake.geom.area,
-                value=request.params["area"]
-            )
-        if compare_filter is not None:
-            filter = Logical(
-                Logical.AND,
-                filters=[filter, compare_filter]
-            )
+        compare_filter = Lake.geom.area >= 0.1
+        filter = and_(filter, compare_filter)
             
         eq_(proto.count(request, filter=filter), '1')
 

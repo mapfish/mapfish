@@ -1,5 +1,0 @@
-mapfish.lib.filters.spatial
-===========================
-
-.. automodule:: mapfish.lib.filters.spatial
-   :members:

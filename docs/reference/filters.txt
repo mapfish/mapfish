@@ -1,6 +1,0 @@
-mapfish.lib.filters
-===================
-
-.. automodule:: mapfish.lib.filters
-.. autoclass:: mapfish.lib.filters.Filter
-    :members:

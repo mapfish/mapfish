@@ -1,18 +1,18 @@
-# 
+#
 # Copyright (C) 2009  Camptocamp
-#  
+#
 # This file is part of MapFish Server
-#  
+#
 # MapFish Server is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-#  
+#
 # MapFish Server is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
-#  
+#
 # You should have received a copy of the GNU Lesser General Public License
 # along with MapFish Server.  If not, see <http://www.gnu.org/licenses/>.
 #
@@ -23,133 +23,111 @@ log = logging.getLogger(__name__)
 from pylons.controllers.util import abort
 
 from shapely.geometry import asShape
+from shapely.geometry.point import Point
+from shapely.geometry.polygon import Polygon
 
-from sqlalchemy.sql import asc, desc
+from sqlalchemy.sql import asc, desc, and_
 
 from geoalchemy import WKBSpatialElement
+from geoalchemy.functions import functions
 
 from geojson import Feature, FeatureCollection, loads, GeoJSON
 
-from mapfish.lib.filters import Filter
-from mapfish.lib.filters.spatial import Spatial
-from mapfish.lib.filters.comparison import Comparison
-from mapfish.lib.filters.logical import Logical
+from mapfish.sqlalchemygeom import within_distance
 
-
-PARAM_TO_FILTER_TYPE = {
-    "eq": Comparison.EQUAL_TO,
-    "ne": Comparison.NOT_EQUAL_TO,
-    "lt": Comparison.LOWER_THAN,
-    "lte": Comparison.LOWER_THAN_OR_EQUAL_TO,
-    "gt": Comparison.GREATER_THAN,
-    "gte": Comparison.GREATER_THAN_OR_EQUAL_TO,
-    "like": Comparison.LIKE,
-    "ilike": Comparison.ILIKE
-}
 
 def create_geom_filter(request, mapped_class, **kwargs):
     """Create MapFish geometry filter based on the request params. Either
     a box or within or geometry filter, depending on the request params.
     Additional named arguments are passed to the spatial filter."""
 
-    geom_column = mapped_class.geometry_column()
-
-    filter = None
     tolerance = 0
     if 'tolerance' in request.params:
         tolerance = float(request.params['tolerance'])
 
-    # get projection EPSG code
     epsg = None
     if 'epsg' in request.params:
         epsg = int(request.params['epsg'])
 
-    # "box" is an alias to "bbox"
     box = None
     if 'bbox' in request.params:
         box = request.params['bbox']
-    elif 'box' in request.params:
-        box = request.params['box']
+
+    geometry = None
 
     if box is not None:
-        # box spatial filter
-        filter = Spatial(
-            Spatial.BOX,
-            geom_column,
-            box=box.split(','),
-            tolerance=tolerance,
-            epsg=epsg,
-            **kwargs
-        )
+        box = map(float, box.split(','))
+        geometry = Polygon(((box[0], box[1]), (box[0], box[3]),
+                            (box[2], box[3]), (box[2], box[1]),
+                            (box[0], box[1])))
     elif 'lon' and 'lat' in request.params:
-        # within spatial filter
-        filter = Spatial(
-            Spatial.WITHIN,
-            geom_column,
-            lon=float(request.params['lon']),
-            lat=float(request.params['lat']),
-            tolerance=tolerance,
-            epsg=epsg,
-            **kwargs
-        )
+        geometry = Point(float(request.params['lon']),
+                         float(request.params['lat']))
     elif 'geometry' in request.params:
-        # geometry spatial filter
-        filter = Spatial(
-            Spatial.GEOMETRY,
-            geom_column,
-            geometry=request.params['geometry'],
-            tolerance=tolerance,
-            epsg=epsg,
-            **kwargs
-        )
-    return filter
+        factory = lambda ob: GeoJSON.to_instance(ob)
+        geometry = loads(request.params['geometry'], object_hook=factory)
+        geometry = asShape(geometry)
 
+    if geometry is None:
+        return None
+
+    geom_column = mapped_class.geometry_column()
+
+    epsg = geom_column.type.srid if epsg is None else epsg
+    if epsg != geom_column.type.srid:
+        geom_column = functions.transform(geom_column, epsg)
+
+    wkb_geometry = WKBSpatialElement(buffer(geometry.wkb), epsg)
+
+    if 'additional_params' in kwargs:
+        return within_distance(geom_column, wkb_geometry, tolerance,
+                               kwargs['additional_params'])
+    else:
+        return within_distance(geom_column, wkb_geometry, tolerance)
+ 
 def create_attr_filter(request, mapped_class):
-    """Create MapFish attribute filter based on the request params,
-    either a comparison filter or a set of comparison filters within
-    a logical and filter."""
+    """Create an ``and_`` SQLAlchemy filter (a ClauseList object) based
+    on the request params (``queryable``, ``eq``, ``ne``, ...)."""
 
-    filter = None
+    mapping = {
+        'eq'   : '__eq__',
+        'ne'   : '__ne__',
+        'lt'   : '__lt__',
+        'lte'  : '__le__',
+        'gt'   : '__gt__',
+        'gte'  : '__ge__',
+        'like' : 'like',
+        'ilike': 'ilike'
+    }
+
+    filters = []
     if 'queryable' in request.params:
-        # comparison filter
         queryable = request.params['queryable'].split(',')
         for k in request.params:
-            if len(request.params[k]) <= 0:
+            if len(request.params[k]) <= 0 or '__' not in k:
                 continue
-            if "__" not in k:
-                continue
+
             col, op = k.split("__")
-            if col not in queryable or op not in PARAM_TO_FILTER_TYPE:
+            if col not in queryable or op not in mapping.keys():
                 continue
-            type = PARAM_TO_FILTER_TYPE[op]
-            f = Comparison(
-                type,
-                mapped_class.__table__.columns[col],
-                value=request.params[k]
-            )
-            if filter is None:
-                filter = f
-            else:
-                filter = Logical(
-                    Logical.AND,
-                    filters=[filter, f]
-                )
-    return filter
+
+            column = getattr(mapped_class, col)
+            f = getattr(column, mapping[op])(request.params[k])
+            filters.append(f)
+
+    return and_(*filters) if len(filters) > 0 else None
 
 def create_default_filter(request, mapped_class, **kwargs):
     """ Create MapFish default filter based on the request params. Additional
     named arguments are passed to the spatial filter."""
 
-    geom_filter = create_geom_filter(request, mapped_class, **kwargs) 
     attr_filter = create_attr_filter(request, mapped_class)
+    geom_filter = create_geom_filter(request, mapped_class, **kwargs)
 
     if geom_filter is None and attr_filter is None:
         return None
 
-    return Logical(
-        Logical.AND,
-        filters=[geom_filter, attr_filter]
-    )
+    return and_(geom_filter, attr_filter)
 
 def asbool(val):
     # Convert the passed value to a boolean.
@@ -157,7 +135,7 @@ def asbool(val):
         low = val.lower()
         return low != 'false' and low != '0'
     else:
-        return bool(val)   
+        return bool(val)
 
 class Protocol(object):
     """ Protocol class.
@@ -194,7 +172,7 @@ class Protocol(object):
     """
 
     def __init__(self, Session, mapped_class, readonly=False, **kwargs):
-              
+
         self.Session = Session
         self.mapped_class = mapped_class
         self.readonly = readonly
@@ -224,12 +202,6 @@ class Protocol(object):
             feature.geometry=None
         return feature
 
-    def _get_default_filter(self, request):
-        """ Return a MapFish default filter. """
-        return create_default_filter(
-            request, self.mapped_class
-        )
-
     def _get_order_by(self, request):
         """ Return an SA order_by """
         column_name = None
@@ -237,12 +209,12 @@ class Protocol(object):
             column_name = request.params['sort']
         elif 'order_by' in request.params:
             column_name = request.params['order_by']
-            
+
         if column_name and column_name in self.mapped_class.__table__.c:
             column = self.mapped_class.__table__.c[column_name]
             if 'dir' in request.params and request.params['dir'].upper() == 'DESC':
                 return desc(column)
-            else: 
+            else:
                 return asc(column)
         else:
             return None
@@ -261,12 +233,9 @@ class Protocol(object):
         if 'offset' in request.params:
             offset = int(request.params['offset'])
 
-        if not filter:
+        if filter is None:
             # create MapFish default filter
-            filter = self._get_default_filter(request)
-
-        if filter and isinstance(filter, Filter):
-            filter = filter.to_sql_expr()
+            filter = create_default_filter(request, self.mapped_class)
 
         query = self.Session.query(self.mapped_class).filter(filter)
 
@@ -283,10 +252,8 @@ class Protocol(object):
 
     def count(self, request, filter=None):
         """ Return the number of records matching the given filter. """
-        if not filter:
-            filter = self._get_default_filter(request)
-        if filter and isinstance(filter, Filter):
-            filter = filter.to_sql_expr()
+        if filter is None:
+            filter = create_default_filter(request, self.mapped_class)
         return str(self.Session.query(self.mapped_class).filter(filter).count())
 
     def read(self, request, filter=None, id=None):
@@ -372,7 +339,7 @@ class Protocol(object):
         self.Session.commit()
         response.status = 204
         return
-    
+
     def __copy_attributes(self, json_feature, obj):
         """Updates the passed-in object with the values
         from the GeoJSON feature."""

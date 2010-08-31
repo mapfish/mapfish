@@ -223,7 +223,7 @@ class Test(unittest.TestCase):
         proto = Protocol(session, Spot)
         request = FakeRequest({})
         
-        request.params['box'] = '-10,-10,10,10'
+        request.params['bbox'] = '-10,-10,10,10'
         eq_(proto.count(request), '4')
         
         request.params['tolerance'] = '200000'
@@ -233,7 +233,7 @@ class Test(unittest.TestCase):
         # note that we either have to specify a tolerance ('tol') or 
         # dimension information ('dim1' and 'dim2')
         filter = create_default_filter(request, Spot, additional_params={'tol': '0.005'})
-        request.params['box'] = '-12.3364241712925,-10.0036833569465,7.66304367998925,9.9979519038951'
+        request.params['bbox'] = '-12.3364241712925,-10.0036833569465,7.66304367998925,9.9979519038951'
         request.params['epsg'] = '2210'
         request.params['tolerance'] = '0'
         eq_(proto.count(request, filter=filter), '5')
@@ -245,7 +245,7 @@ class Test(unittest.TestCase):
             "MDSYS.SDO_DIM_ELEMENT('LATITUDE', -19929239, 19929239, 0.005)"\
             ")"
         
-        request.params['box'] = '-975862.822682856,-999308.345117013,1027887.98627823,999373.702609189'
+        request.params['bbox'] = '-975862.822682856,-999308.345117013,1027887.98627823,999373.702609189'
         request.params['epsg'] = '54004' # Oracles SRID number for World Mercator
         filter = create_default_filter(request, Spot, 
                                        additional_params={'dim1': text(diminfo),
@@ -303,27 +303,15 @@ class Test(unittest.TestCase):
         
         proto = Protocol(session, Lake)
         
-        request = FakeRequest({})
-        request.params['box'] = '-90,40,-80,45'
-        request.params['area'] = 0.1
+        from sqlalchemy.sql import and_
         
-        from mapfish.lib.filters.comparison import Comparison
-        from mapfish.lib.filters.logical import Logical
+        request = FakeRequest({})
+        request.params['bbox'] = '-90,40,-80,45'
         
         filter = create_geom_filter(request, Lake)
         
-        compare_filter = None
-        if "area" in request.params:
-            compare_filter = Comparison(
-                Comparison.GREATER_THAN_OR_EQUAL_TO,
-                Lake.geom.area,
-                value=request.params["area"]
-            )
-        if compare_filter is not None:
-            filter = Logical(
-                Logical.AND,
-                filters=[filter, compare_filter]
-            )
+        compare_filter = Lake.geom.area >= 0.1
+        filter = and_(filter, compare_filter)
             
         eq_(proto.count(request, filter=filter), '3')
 

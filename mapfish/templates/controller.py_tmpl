@@ -5,7 +5,6 @@ from {{basePkg}}.lib.base import BaseController
 from {{basePkg}}.model.{{modName}} import {{modelClass}}
 from {{basePkg}}.model.meta import Session
 
-from mapfish.lib.filters import *
 from mapfish.lib.protocol import Protocol, create_default_filter
 from mapfish.decorators import geojsonify
 
@@ -19,44 +18,18 @@ class {{contrClass}}Controller(BaseController):
     def index(self, format='json'):
         """GET /: return all features."""
         # If no filter argument is passed to the protocol index method
-        # then the default MapFish filter is used. This default filter
-        # is constructed based on the box, lon, lat, tolerance GET
-        # params.
+        # then the default MapFish filter is used.
         #
         # If you need your own filter with application-specific params 
         # taken into acount, create your own filter and pass it to the
-        # protocol index method.
-        #
-        # E.g.
-        #
-        # default_filter = create_default_filter(
-        #     request, {{modelClass}}
-        # )
-        # compare_filter = comparison.Comparison(
-        #     comparison.Comparison.ILIKE,
-        #     {{modelClass}}.mycolumnname,
-        #     value=myvalue
-        # )
-        # filter = logical.Logical(logical.Logical.AND, [default_filter, compare_filter])
-        # return self.protocol.index(request, response, format=format, filter=filter)
-        #
-        #
-        # You can also create filters using sqlalchemy syntax.
-        # It is possible for example to mix a custom sqlalchemy filter
-        # with the default mapfish filter.
+        # protocol read method.
         #
         # E.g.
         #
         # from sqlalchemy.sql import and_
         #
-        # default_filter = create_default_filter(
-        #     request, {{modelClass}}
-        # )
-        # compare_filter = {{modelClass}}.mycolumnname.ilike('%myvalue%')
-        # if default_filter is not None:
-        #     filter = and_(default_filter.to_sql_expr(), compare_filter)
-        # else:
-        #     filter = compare_filter
+        # default_filter = create_default_filter(request, {{modelClass}})
+        # filter = and_(default_filter, {{modelClass}}.columname.ilike('%value%'))
         # return self.protocol.read(request, filter=filter)
         if format != 'json':
             abort(404)

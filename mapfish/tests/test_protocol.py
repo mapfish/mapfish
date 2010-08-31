@@ -4,19 +4,20 @@ from StringIO import StringIO
 
 import unittest
 
+from nose.tools import eq_, ok_
+
 from sqlalchemy import MetaData, Column, create_engine
-from sqlalchemy import types
-from sqlalchemy import orm
+from sqlalchemy import types, orm, sql
 from sqlalchemy.ext.declarative import declarative_base
 
 from geojson import dumps, Feature
 
+from shapely import wkt, wkb
 from shapely.geometry.polygon import Polygon
 
 from geoalchemy import GeometryColumn, Geometry
 
 from mapfish.sqlalchemygeom import GeometryTableMixIn
-from mapfish.lib.filters import logical, comparison, spatial
 
 #
 # Setup
@@ -53,126 +54,171 @@ def query_to_str(query):
     """Helper method which compiles a query using a database engine
     """
     return unicode(query.statement.compile(engine)).encode('ascii', 'backslashreplace')
+
+def _compiled_to_string(compiled_filter):
+    """Helper method which converts a compiled SQL expression
+    into a string.
+    """
+    return unicode(compiled_filter).encode('ascii', 'backslashreplace')
+
 #
 # Test
 # 
 
 class Test(unittest.TestCase):
 
-    def test_create_geom_filter(self):
+    def test_box_filter(self):
         from mapfish.lib.protocol import create_geom_filter
         request = FakeRequest(
-            {"box": "-45,-5,40,0", "tolerance": "1", "epsg": "900913"}
+            {"bbox": "-180,-90,180,90", "tolerance": "1"}
         )
         filter = create_geom_filter(request, MappedClass)
-        assert isinstance(filter, spatial.Spatial)
-        assert filter.type == spatial.Spatial.BOX
-        assert filter.values["tolerance"] == 1
-        assert filter.values["epsg"] == 900913
-    
+        compiled_filter = filter.compile(engine)
+        params = compiled_filter.params
+        filter_str = _compiled_to_string(compiled_filter)
+        eq_(filter_str, '(ST_Expand(GeomFromWKB(%(GeomFromWKB_1)s, %(GeomFromWKB_2)s), %(ST_Expand_1)s) && "table".geom) AND (ST_Expand("table".geom, %(ST_Expand_2)s) && GeomFromWKB(%(GeomFromWKB_3)s, %(GeomFromWKB_4)s)) AND ST_Distance("table".geom, GeomFromWKB(%(GeomFromWKB_5)s, %(GeomFromWKB_6)s)) <= %(ST_Distance_1)s')
+        assert wkb.loads(str(params["GeomFromWKB_1"])).equals(wkt.loads('POLYGON ((-180 -90, -180 90, 180 90, 180 -90, -180 -90))'))
+        assert params["GeomFromWKB_2"] == 4326
+        assert params["ST_Expand_1"] == 1
+        assert params["ST_Distance_1"] == 1
+   
         request = FakeRequest(
-            {"bbox": "-45,-5,40,0", "tolerance": "1", "epsg": "900913"}
+            {"bbox": "-180,-90,180,90", "tolerance": "1", "epsg": "900913"}
         )
         filter = create_geom_filter(request, MappedClass)
-        assert isinstance(filter, spatial.Spatial)
-        assert filter.type == spatial.Spatial.BOX
-        assert filter.values["tolerance"] == 1
-        assert filter.values["epsg"] == 900913
-    
+        compiled_filter = filter.compile(engine)
+        params = compiled_filter.params
+        filter_str = _compiled_to_string(compiled_filter)
+        eq_(filter_str, '(ST_Expand(GeomFromWKB(%(GeomFromWKB_1)s, %(GeomFromWKB_2)s), %(ST_Expand_1)s) && ST_Transform("table".geom, %(param_1)s)) AND (ST_Expand(ST_Transform("table".geom, %(param_2)s), %(ST_Expand_2)s) && GeomFromWKB(%(GeomFromWKB_3)s, %(GeomFromWKB_4)s)) AND ST_Distance(ST_Transform("table".geom, %(param_3)s), GeomFromWKB(%(GeomFromWKB_5)s, %(GeomFromWKB_6)s)) <= %(ST_Distance_1)s')
+        assert wkb.loads(str(params["GeomFromWKB_1"])).equals(wkt.loads('POLYGON ((-180 -90, -180 90, 180 90, 180 -90, -180 -90))'))
+        assert params["GeomFromWKB_2"] == 900913
+        assert params["ST_Expand_1"] == 1
+        assert params["param_1"] == 900913
+        assert params["ST_Distance_1"] == 1
+
+    def test_within_filter(self):
+        from mapfish.lib.protocol import create_geom_filter
         request = FakeRequest(
-            {"lon": "-45", "lat": "5", "tolerance": "1", "epsg": "900913"}
+            {"lon": "40", "lat": "5", "tolerance": "1"}
         )
         filter = create_geom_filter(request, MappedClass)
-        assert isinstance(filter, spatial.Spatial)
-        assert filter.type == spatial.Spatial.WITHIN
-        assert filter.values["tolerance"] == 1
-        assert filter.values["epsg"] == 900913
-    
+        compiled_filter = filter.compile(engine)
+        params = compiled_filter.params
+        filter_str = _compiled_to_string(compiled_filter)
+        eq_(filter_str, '(ST_Expand(GeomFromWKB(%(GeomFromWKB_1)s, %(GeomFromWKB_2)s), %(ST_Expand_1)s) && "table".geom) AND (ST_Expand("table".geom, %(ST_Expand_2)s) && GeomFromWKB(%(GeomFromWKB_3)s, %(GeomFromWKB_4)s)) AND ST_Distance("table".geom, GeomFromWKB(%(GeomFromWKB_5)s, %(GeomFromWKB_6)s)) <= %(ST_Distance_1)s')
+        assert wkb.loads(str(params["GeomFromWKB_1"])).equals(wkt.loads('POINT (40 5)'))
+        assert params["GeomFromWKB_2"] == 4326
+        assert params["ST_Expand_1"] == 1
+        assert params["ST_Distance_1"] == 1
+
+        request = FakeRequest(
+            {"lon": "40", "lat": "5", "tolerance": "1", "epsg": "900913"}
+        )
+        filter = create_geom_filter(request, MappedClass)
+        compiled_filter = filter.compile(engine)
+        params = compiled_filter.params
+        filter_str = _compiled_to_string(compiled_filter)
+        eq_(filter_str, '(ST_Expand(GeomFromWKB(%(GeomFromWKB_1)s, %(GeomFromWKB_2)s), %(ST_Expand_1)s) && ST_Transform("table".geom, %(param_1)s)) AND (ST_Expand(ST_Transform("table".geom, %(param_2)s), %(ST_Expand_2)s) && GeomFromWKB(%(GeomFromWKB_3)s, %(GeomFromWKB_4)s)) AND ST_Distance(ST_Transform("table".geom, %(param_3)s), GeomFromWKB(%(GeomFromWKB_5)s, %(GeomFromWKB_6)s)) <= %(ST_Distance_1)s')
+        assert wkb.loads(str(params["GeomFromWKB_1"])).equals(wkt.loads('POINT (40 5)'))
+        assert params["GeomFromWKB_2"] == 900913
+        assert params["ST_Expand_1"] == 1
+        assert params["param_1"] == 900913
+        assert params["ST_Distance_1"] == 1
+
+    def test_polygon_filter(self):
+        from mapfish.lib.protocol import create_geom_filter
+        poly = Polygon(((1, 2), (1, 3), (2, 3), (2, 2), (1, 2)))
+        request = FakeRequest(
+            {"geometry": dumps(poly), "tolerance": "1"}
+        )
+        filter = create_geom_filter(request, MappedClass)
+        compiled_filter = filter.compile(engine)
+        params = compiled_filter.params
+        filter_str = _compiled_to_string(compiled_filter)
+        eq_(filter_str, '(ST_Expand(GeomFromWKB(%(GeomFromWKB_1)s, %(GeomFromWKB_2)s), %(ST_Expand_1)s) && "table".geom) AND (ST_Expand("table".geom, %(ST_Expand_2)s) && GeomFromWKB(%(GeomFromWKB_3)s, %(GeomFromWKB_4)s)) AND ST_Distance("table".geom, GeomFromWKB(%(GeomFromWKB_5)s, %(GeomFromWKB_6)s)) <= %(ST_Distance_1)s')
+        assert wkb.loads(str(params["GeomFromWKB_1"])).equals(poly)
+        assert params["GeomFromWKB_2"] == 4326
+        assert params["ST_Expand_1"] == 1
+        assert params["ST_Distance_1"] == 1
+
         poly = Polygon(((1, 2), (1, 3), (2, 3), (2, 2), (1, 2)))
         request = FakeRequest(
             {"geometry": dumps(poly), "tolerance": "1", "epsg": "900913"}
         )
         filter = create_geom_filter(request, MappedClass)
-        assert isinstance(filter, spatial.Spatial)
-        assert filter.type == spatial.Spatial.GEOMETRY
-        assert filter.values["tolerance"] == 1
-        assert filter.values["epsg"] == 900913
-    
+        compiled_filter = filter.compile(engine)
+        params = compiled_filter.params
+        filter_str = _compiled_to_string(compiled_filter)
+        eq_(filter_str, '(ST_Expand(GeomFromWKB(%(GeomFromWKB_1)s, %(GeomFromWKB_2)s), %(ST_Expand_1)s) && ST_Transform("table".geom, %(param_1)s)) AND (ST_Expand(ST_Transform("table".geom, %(param_2)s), %(ST_Expand_2)s) && GeomFromWKB(%(GeomFromWKB_3)s, %(GeomFromWKB_4)s)) AND ST_Distance(ST_Transform("table".geom, %(param_3)s), GeomFromWKB(%(GeomFromWKB_5)s, %(GeomFromWKB_6)s)) <= %(ST_Distance_1)s')
+        assert wkb.loads(str(params["GeomFromWKB_1"])).equals(poly)
+        assert params["GeomFromWKB_2"] == 900913
+        assert params["ST_Expand_1"] == 1
+        assert params["param_1"] == 900913
+        assert params["ST_Distance_1"] == 1        #assert isinstance(filter, sql.expression.ClauseElement)
+
+    def test_geom_filter_misc(self):
+        from mapfish.lib.protocol import create_geom_filter
         request = FakeRequest({})
         filter = create_geom_filter(request, MappedClass)
         assert filter is None
-        
-        request = FakeRequest({"lon": "-45", "lat": "5"})
-        filter = create_geom_filter(request, MappedClass, additional_params='unit=KM')
-        assert filter.additional_params is not None
-    
-    
+
     def test_create_attr_filter(self):
         from mapfish.lib.protocol import create_attr_filter
         request = FakeRequest(
             {"queryable": "id", "id__eq": "1"}
         )
         filter = create_attr_filter(request, MappedClass)
-        assert isinstance(filter, comparison.Comparison)
-        assert filter.type == comparison.Comparison.EQUAL_TO
-        assert filter.values["value"] == "1"
-    
+        assert isinstance(filter, sql.expression.ClauseElement)
+        assert sql.and_(MappedClass.id == "1").compare(filter)
+
         request = FakeRequest(
             {"queryable": "id", "id__lt": "1"}
         )
         filter = create_attr_filter(request, MappedClass)
-        assert isinstance(filter, comparison.Comparison)
-        assert filter.type == comparison.Comparison.LOWER_THAN
-        assert filter.values["value"] == "1"
-    
+        assert isinstance(filter, sql.expression.ClauseElement)
+        assert sql.and_(MappedClass.id < "1").compare(filter)
+
         request = FakeRequest(
             {"queryable": "id", "id__lte": "1"}
         )
         filter = create_attr_filter(request, MappedClass)
-        assert isinstance(filter, comparison.Comparison)
-        assert filter.type == comparison.Comparison.LOWER_THAN_OR_EQUAL_TO
-        assert filter.values["value"] == "1"
-    
+        assert isinstance(filter, sql.expression.ClauseElement)
+        assert sql.and_(MappedClass.id <= "1").compare(filter)
+
         request = FakeRequest(
             {"queryable": "id", "id__gt": "1"}
         )
         filter = create_attr_filter(request, MappedClass)
-        assert isinstance(filter, comparison.Comparison)
-        assert filter.type == comparison.Comparison.GREATER_THAN
-        assert filter.values["value"] == "1"
-    
+        assert isinstance(filter, sql.expression.ClauseElement)
+        assert sql.and_(MappedClass.id > "1").compare(filter)
+
         request = FakeRequest(
             {"queryable": "id", "id__gte": "1"}
         )
         filter = create_attr_filter(request, MappedClass)
-        assert isinstance(filter, comparison.Comparison)
-        assert filter.type == comparison.Comparison.GREATER_THAN_OR_EQUAL_TO
-        assert filter.values["value"] == "1"
-    
+        assert isinstance(filter, sql.expression.ClauseElement)
+        assert sql.and_(MappedClass.id >= "1").compare(filter)
+
         request = FakeRequest(
             {"queryable": "text", "text__like": "foo"}
         )
         filter = create_attr_filter(request, MappedClass)
-        assert isinstance(filter, comparison.Comparison)
-        assert filter.type == comparison.Comparison.LIKE
-        assert filter.values["value"] == "foo"
-    
+        assert isinstance(filter, sql.expression.ClauseElement)
+        assert sql.and_(MappedClass.text.like("foo")).compare(filter)
+
         request = FakeRequest(
             {"queryable": "text", "text__ilike": "foo"}
         )
         filter = create_attr_filter(request, MappedClass)
-        assert isinstance(filter, comparison.Comparison)
-        assert filter.type == comparison.Comparison.ILIKE
-        assert filter.values["value"] == "foo"
-    
+        assert isinstance(filter, sql.expression.ClauseElement)
+        assert sql.and_(MappedClass.text.ilike("foo")).compare(filter)
+
         request = FakeRequest(
             {"queryable": "text,id", "text__ilike": "foo", "id__eq": "1"}
         )
         filter = create_attr_filter(request, MappedClass)
-        assert isinstance(filter, logical.Logical)
-        assert filter.type == logical.Logical.AND
-        assert len(filter.filters) == 2
-    
+        assert (sql.and_(MappedClass.text.ilike("foo"), MappedClass.id == "1")).compare(filter)
+
         request = FakeRequest(
             {"text__ilike": "foo", "id__eq": "1"}
         )

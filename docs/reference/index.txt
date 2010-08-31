@@ -24,16 +24,3 @@ Protocol implementation
    :maxdepth: 1
 
    protocol 
-
-Filtering API
-
-.. toctree::
-   :maxdepth: 1
-
-   filters
-   filters.comparison
-   filters.featureid
-   filters.logical
-   filters.spatial
-
-

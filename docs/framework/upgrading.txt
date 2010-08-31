@@ -107,6 +107,37 @@ With MapFish 2.0 the same ``user`` model looks like this::
         }
         the_geom = GeometryColumn(Point(srid=4326))
 
+Filters
+^^^^^^^
+
+The ``Filter`` abstraction is no longer. With MapFish 2.0 only SQLAlchemy
+filters (``ClauseElement``) are manipulated.
+
+The `create_default_filter()
+<../reference/protocol.html#creating-protocol-filter>`_, `create_attr_filter()
+<../reference/protocol.html#creating-protocol-filter>`_, and
+`create_geom_filter() <../reference/protocol.html#creating-protocol-filter>`_
+functions all return SQLAlchemy ``ClauseElement`` objects.
+
+Concretely it means that you change your code not to rely on ``Spatial``,
+``Comparison``, ``Logical`` and ``FeatureId`` filters but on regular SQLAlchemy
+``ClauseElement`` objects. For example you would use ``and_`` instead of
+``Logical``, etc.
+
+Protocol
+^^^^^^^^
+
+With the removal of the ``Filter`` abstraction the ``lib`` module is entirely
+gone, and the ``protocol`` module is now located in ``mapfish``. This means
+your files that import ``protocol``, typically controllers, should be changed.
+Typical controllers must be changed from::
+
+    from mapfish.lib.protocol import Protocol, create_default_filter
+
+to::
+
+    from mapfish.protocol import Protocol, create_default_filter
+
 geojsonify
 ^^^^^^^^^^
 
@@ -123,7 +154,6 @@ that looked like this::
     from myproject.model.meta import Session
     from myproject.lib.decorators import geojsonify
 
-    from mapfish.lib.filters import *
     from mapfish.lib.protocol import Protocol, create_default_filter
 
     class UsersController(BaseController):
@@ -161,7 +191,6 @@ With MapFish 2.0 the same ``user`` controller looks like this::
     from test.model.users import User
     from test.model.meta import Session
 
-    from mapfish.lib.filters import *
     from mapfish.lib.protocol import Protocol, create_default_filter
     from mapfish.decorators import geojsonify
 

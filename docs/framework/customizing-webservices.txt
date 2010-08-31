@@ -9,9 +9,7 @@ Adding filters
 
 Web services generated with the ``paster mf-layer`` command implement the HTTP
 interfaces described in the `Protocol page <../protocol.html>`_. You may need to
-augment these interfaces and add your own, custom filtering parameters. The
-MapFish framework provides `APIs <reference/index.html/filters.html>`_ for
-that.
+augment these interfaces and add your own, custom filtering parameters.
 
 The generated controller class for the ``users`` layer looks like this::
 
@@ -22,12 +20,12 @@ The generated controller class for the ``users`` layer looks like this::
             self.protocol = Protocol(Session, User, self.readonly)
 
         def index(self, format='json'):
-            return self.protocol.index(request, response, format=format)
+            return self.protocol.read(request)
 
 (The comments and the other actions have been intentionally omited.)
 
 Note that no filter is passed to the protocol (the ``filter`` positional
-argument to the ``index`` method is not set). When the protocol isn't passed a
+argument to the ``read`` method is not set). When the protocol isn't passed a
 filter it creates a default one, the *MapFish default filter*, which
 corresponds to what's defined in the MapFish Protocol.
 
@@ -39,6 +37,8 @@ service.
     web service. For this you will create a comparison filter and combine it
     with the MapFish default filter::
 
+        from sqlalchemy.sql import and_
+
         class UsersController(BaseController):
             readonly = True # if set to True, only GET is supported
 
@@ -46,30 +46,23 @@ service.
                 self.protocol = Protocol(Session, User, self.readonly)
 
             def index(self, format='json'):
-                compare_filter = comparison.Comparison(
-                    comparison.Comparison.EQUAL_TO,
-                    User.type,
-                    value="employee"
-                )
                 default_filter = create_default_filter(request, User)
-                filter = logical.Logical(
-                    logical.Logical.AND,
-                    filters=[compare_filter, default_filter]
-                )
-                return self.protocol.index(request, response, format=format, filter=filter)
+                filter = and_(default_filter, User.type == "employee")
+                return self.protocol.read(request, filter=filter)
 
-    The new comparison filter is combined with the default filter in a logical
-    and filter. See the documentations of the `mapfish.lib.filters.comparison
-    <reference/filters.comparison.html>`_ and `mapfish.lib.filters.logical
-    <reference/filters.logical.html>`_ modules and of the
-    `create_default_filter()
-    <reference/protocol.html#creating-protocol-filter>`_ function.
+    The new filter is combined with the default filter in a boolean filter.
+    The default filter is created with the `create_default_filter()
+    <../reference/protocol.html#creating-protocol-filter>`_. The boolean
+    filter is created with the ``and_`` SQLAlchemy function, see
+    the SQLAlchemy documentation for further detail.
 
 **Scenario #2**
     Let's now assume that you want the web service to return either *managers*
     or *developers* or both based on the *type* parameter in the query string.
     Let's also assume that you still want your web service to support all the
     geographic filtering capability of the MapFish protocol::
+
+        from sqlalchemy.sql import and_
 
         class UsersController(BaseController):
             readonly = True # if set to True, only GET is supported
@@ -79,26 +72,15 @@ service.
 
             def index(self, format='json'):
                 filter = create_geom_filter(request, User)
-                compare_filter = None
                 if "type" in request.params:
-                    compare_filter = comparison.Comparison(
-                        comparison.Comparison.EQUAL_TO,
-                        User.type,
-                        value=request.params["type"]
-                    )
-                if compare_filter is not None:
-                    filter = logical.Logical(
-                        logical.Logical.AND,
-                        filters=[filter, compare_filter]
-                    )
-                return self.protocol.index(request, response, format=format, filter=filter)
+                    filter = and_(filter, User.type == request.params["type"])
+                return self.protocol.read(request, filter=filter)
 
     The ``create_geom_filter()`` function is called to get the default
     geographic filter. And, if the query string includes the ``type``
-    parameter, the geographic filter is combined with a comparison filter whose
-    value is the value of the ``type`` parameter in the query string. See the
-    documentation of the `create_geom_filter()
-    <reference/protocol.html#creating-protocol-filter>`_ function.
+    parameter, the geographic filter is combined with a specific filter in a
+    boolean filter. See the documentation of the `create_geom_filter()
+    <../reference/protocol.html#creating-protocol-filter>`_ function.
 
 **Scenario #3**
     We assume in this scenario that you want to support the *type* parameter in
@@ -114,35 +96,24 @@ service.
             def index(self, format='json'):
                 filters = []
                 if "type" in request.params:
-                    filters.append(
-                        comparison.Comparison(
-                            comparison.Comparison.EQUAL_TO,
-                            User.type,
-                            value=request.params["type"]
-                        )
-                    )
+                    filters.append(User.type == request.params["type"])
                 if "bbox" in request.params:
+                    FIXME FIXME the following will have to change
                     filters.append(
                         spatial.Spatial(
                             spatial.Spatial.BOX,
                             User.geometry_column(),
                             box=request.params["bbox"].split(",")
-                        )
-                    )
-                filter = logical.Logical(
-                    logical.Logical.AND,
-                    filters=filters
-                )
-                return self.protocol.index(request, response, format=format, filter=filter)
+                        ).to_sql_expr()
+                return self.protocol.read(request, filter=and_(*filters))
 
-    In this scenario the web service doesn't rely on the default filters of the
-    MapFish Protocol. See the documentation of the `mapfish.lib.filters.spatial
-    <reference/filters.spatial.html>`_ module.
+    In this scenario the web service doesn't rely on the MapFish default
+    filter.
     
 **Scenario #4**
-	This scenario will demonstrate how to use GeoAlchemy's geometry functions in a custom filter. Let's
-  	say you want to query lakes whose area is greater or equal than the value of a ``area`` parameter 
-  	in the query string::
+    This scenario will demonstrate how to use GeoAlchemy's geometry functions
+    in a custom filter. Let's say you want to query lakes whose area is greater
+    or equal than the value of a ``area`` parameter in the query string::
   	
 		class LakesController(BaseController):
 			readonly = True # if set to True, only GET is supported
@@ -152,20 +123,11 @@ service.
 			
 			def index(self, format='json'):
 			    filter = create_geom_filter(request, Lake)
-			    compare_filter = None
 			    if "area" in request.params:
-			        compare_filter = comparison.Comparison(
-			            comparison.Comparison.EQUAL_TO,
-			            Lake.geom.area,
-			            value=request.params["area"]
-			        )
-			    if compare_filter is not None:
-			        filter = logical.Logical(
-			            logical.Logical.AND,
-			            filters=[filter, compare_filter]
-			        )
-			    return self.protocol.index(request, response, format=format, filter=filter)
+                    filter = and_(filter, Lake.geom.area == request.params["area"])
+			    return self.protocol.index(request, filter=filter)
 			    
-	If the parameter ``area`` is set in the request, a new comparison filter is created and 
-	combined with the geographic filter. The comparison filter calls the function ``area()`` on
-	the geometry column and compares it with the value of parameter ``area``.
+    If the parameter ``area`` is set in the request, a filter is created and
+    combined with the geographic filter. This filter calls the function
+    ``area()`` on the geometry column and compares it with the value of
+    parameter ``area``.
