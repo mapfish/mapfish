@@ -1,1 +1,2 @@
 recursive-include mapfish/templates *
+recursive-exclude docs *
