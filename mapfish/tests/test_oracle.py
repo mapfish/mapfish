@@ -10,7 +10,7 @@ from sqlalchemy import orm
 from geoalchemy import (Point, Polygon, GeometryColumn, GeometryDDL)
 
 from mapfish.sqlalchemygeom import GeometryTableMixIn
-from mapfish.lib.protocol import Protocol, create_geom_filter,\
+from mapfish.protocol import Protocol, create_geom_filter,\
     create_default_filter
 from test_protocol import FakeRequest, FakeResponse
 

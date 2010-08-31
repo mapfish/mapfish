@@ -154,7 +154,7 @@ that looked like this::
     from myproject.model.meta import Session
     from myproject.lib.decorators import geojsonify
 
-    from mapfish.lib.protocol import Protocol, create_default_filter
+    from mapfish.protocol import Protocol, create_default_filter
 
     class UsersController(BaseController):
         readonly = False # if set to True, only GET is supported
@@ -191,7 +191,7 @@ With MapFish 2.0 the same ``user`` controller looks like this::
     from test.model.users import User
     from test.model.meta import Session
 
-    from mapfish.lib.protocol import Protocol, create_default_filter
+    from mapfish.protocol import Protocol, create_default_filter
     from mapfish.decorators import geojsonify
 
     class UsersController(BaseController):

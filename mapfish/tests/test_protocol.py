@@ -68,7 +68,7 @@ def _compiled_to_string(compiled_filter):
 class Test(unittest.TestCase):
 
     def test_box_filter(self):
-        from mapfish.lib.protocol import create_geom_filter
+        from mapfish.protocol import create_geom_filter
         request = FakeRequest(
             {"bbox": "-180,-90,180,90", "tolerance": "1"}
         )
@@ -97,7 +97,7 @@ class Test(unittest.TestCase):
         assert params["ST_Distance_1"] == 1
 
     def test_within_filter(self):
-        from mapfish.lib.protocol import create_geom_filter
+        from mapfish.protocol import create_geom_filter
         request = FakeRequest(
             {"lon": "40", "lat": "5", "tolerance": "1"}
         )
@@ -126,7 +126,7 @@ class Test(unittest.TestCase):
         assert params["ST_Distance_1"] == 1
 
     def test_polygon_filter(self):
-        from mapfish.lib.protocol import create_geom_filter
+        from mapfish.protocol import create_geom_filter
         poly = Polygon(((1, 2), (1, 3), (2, 3), (2, 2), (1, 2)))
         request = FakeRequest(
             {"geometry": dumps(poly), "tolerance": "1"}
@@ -157,13 +157,13 @@ class Test(unittest.TestCase):
         assert params["ST_Distance_1"] == 1        #assert isinstance(filter, sql.expression.ClauseElement)
 
     def test_geom_filter_misc(self):
-        from mapfish.lib.protocol import create_geom_filter
+        from mapfish.protocol import create_geom_filter
         request = FakeRequest({})
         filter = create_geom_filter(request, MappedClass)
         assert filter is None
 
     def test_create_attr_filter(self):
-        from mapfish.lib.protocol import create_attr_filter
+        from mapfish.protocol import create_attr_filter
         request = FakeRequest(
             {"queryable": "id", "id__eq": "1"}
         )
@@ -227,7 +227,7 @@ class Test(unittest.TestCase):
     
     
     def test_asbool(self):
-        from mapfish.lib.protocol import asbool
+        from mapfish.protocol import asbool
         assert asbool(0) == False
         assert asbool(1) == True
         assert asbool(2) == True
@@ -245,7 +245,7 @@ class Test(unittest.TestCase):
         assert asbool(u"True") == True
     
     def test_protocol_query(self):
-        from mapfish.lib.protocol import Protocol, create_attr_filter
+        from mapfish.protocol import Protocol, create_attr_filter
         proto = Protocol(Session, MappedClass)
     
         request = FakeRequest({})
@@ -291,7 +291,7 @@ class Test(unittest.TestCase):
         assert "DESC" in query_to_str(query)
     
     def test_protocol_create(self):
-        from mapfish.lib.protocol import Protocol
+        from mapfish.protocol import Protocol
         proto = Protocol(Session, MappedClass)
         request = FakeRequest({})
         request.body = '{"type": "FeatureCollection", "features": [{"type": "Feature", "properties": {"text": "foo"}, "geometry": {"type": "Point", "coordinates": [45, 5]}}, {"type": "Feature", "properties": {"text": "foo"}, "geometry": {"type": "Point", "coordinates": [45, 5]}}]}'

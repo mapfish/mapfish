@@ -5,7 +5,7 @@ from {{basePkg}}.lib.base import BaseController
 from {{basePkg}}.model.{{modName}} import {{modelClass}}
 from {{basePkg}}.model.meta import Session
 
-from mapfish.lib.protocol import Protocol, create_default_filter
+from mapfish.protocol import Protocol, create_default_filter
 from mapfish.decorators import geojsonify
 
 class {{contrClass}}Controller(BaseController):
