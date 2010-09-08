@@ -167,9 +167,10 @@ service. Creating a web service is done in three steps:
     (env) $ paster mf-layer countries
 
 3. configure a route to the ``countries`` controller, this is done by adding
-   the following statement after the "CUSTOM ROUTES HERE" comment in the
+   the following lines after the "CUSTOM ROUTES HERE" comment in the
    ``mapfishapp/config/routing.py`` file::
 
+    map.connect("/countries/count", controller="countries", action="count")
     map.resource("country", "countries")
 
 Watch the indentation! 4 spaces are needed here.
@@ -195,37 +196,59 @@ functionality based on that web service. This search functionality will involve
 displaying a popup containing information about the country that is clicked by
 the user.
 
-Edit the ``mapfishapp/public/app/js/mapfishapp_layout.js`` file, look up the
+Edit the ``mapfishapp/public/app/lib/App/layout.js`` file, look up the
 ``createTbarItems()`` function, and insert a new ``GeoExt.Action`` to the array
 returned by the function by adding the following code to the function (If
-unsure, see this :download:`file <_static/mapfishapp_layout.js>`):
+unsure, see this :download:`file <_static/layout.js>`):
 
 .. code-block:: javascript
 
     actions.push(new GeoExt.Action({
-        iconCls: "info",
+        text: "Query",
         map: map,
         toggleGroup: "tools",
         allowDepress: false,
-        tooltip: "Query",
-        control: new mapfish.Searcher.Map({
-            url: "countries",
-            protocol: {
-                params: {
-                    epsg: "900913",
-                    attrs: "pays,continent",
-                    no_geom: true
-                }
-            },
-            displayDefaultPopup: true
+        control: new OpenLayers.Control.GetFeature({
+    	protocol: new OpenLayers.Protocol.HTTP({
+    	    url: "countries",
+    	    params: {
+    		epsg: "900913",
+    		attrs: "pays,continent"
+    	    },
+    	    format: new OpenLayers.Format.GeoJSON()
+    	}),
+    	eventListeners: {
+    	    featureselected: function(e) {
+    		var f = e.feature;
+    		var html = "<p>Country: "+f.attributes.pays+"</p>" +
+    		    "<p>Continent: "+f.attributes.continent+"</p>";
+    		f.geometry.transform(
+    		    map.displayProjection, map.projection);
+    		if (!this._popup) {
+    		    this._popup = new GeoExt.Popup({
+    			html: html,
+    			map: map,
+    			closeAction: 'hide',
+    			unpinnable: false
+    		    });
+    		}
+    		else {
+    		    this._popup.body.update(html);
+    		    this._popup.doLayout();
+    		}
+    		this._popup.feature = f;
+    		this._popup.show();
+    	    }
+    	}
         })
     }));
 
-In the above code a ``GeoExt.Action`` configured with ``mapfish.Searcher.Map``
-is added to the array of actions. The ``mapfish.Searcher.Map`` object is
-connected to the ``countries`` web service through the ``url`` option. In this
-example the ``mapfish.Searcher.Map`` object displays a default popup containing
-the name of the clicked country, and the name of is continent.
+In the above code a ``GeoExt.Action`` configured with an
+``OpenLayers.Control.GetFeature`` is added to the array of actions. The
+``OpenLayers.Control.GetFeature`` object is connected to the ``countries`` web
+service through an ``OpenLayers.Protocol.HTTP`` object. In this example a
+``GeoExt.Popup`` containing the name of the clicked country, and the name of
+the continent, is displayed.
 
 .. image:: _static/query.png
     :height: 300pt

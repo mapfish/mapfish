@@ -4,20 +4,25 @@
  * @include OpenLayers/Projection.js
  * @include OpenLayers/Layer/XYZ.js
  * @include OpenLayers/Tile/Image.js
+ * @include OpenLayers/Protocol/HTTP.js
+ * @include OpenLayers/Request/XMLHttpRequest.js
  * @include OpenLayers/Control/Navigation.js
  * @include OpenLayers/Control/ZoomBox.js
  * @include OpenLayers/Control/NavigationHistory.js
+ * @include OpenLayers/Control/GetFeature.js
+ * @include OpenLayers/Format/GeoJSON.js
  * @include GeoExt/data/LayerStore.js
  * @include GeoExt/widgets/MapPanel.js
  * @include GeoExt/widgets/Action.js
  * @include GeoExt/widgets/ZoomSlider.js
  * @include GeoExt/widgets/tips/ZoomSliderTip.js
  * @include GeoExt/widgets/tree/LayerContainer.js
+ * @include GeoExt/widgets/Popup.js
  */
 
-Ext.namespace("mapfishapp");
+Ext.namespace("App");
 
-mapfishapp.layout = (function() {
+App.layout = (function() {
     /*
      * Private
      */
@@ -39,6 +44,7 @@ mapfishapp.layout = (function() {
             maxExtent: new OpenLayers.Bounds(-20037508, -20037508,
                                              20037508, 20037508.34),
             allOverlays: false,
+            theme: null,
             controls: []
         });
     };
@@ -108,20 +114,42 @@ mapfishapp.layout = (function() {
             })
         }));
         actions.push(new GeoExt.Action({
-            iconCls: "info",
+            text: "Query",
             map: map,
             toggleGroup: "tools",
             allowDepress: false,
-            tooltip: "Query",
-            control: new mapfish.Searcher.Map({
-                url: "countries",
-                protocol: {
+            control: new OpenLayers.Control.GetFeature({
+                protocol: new OpenLayers.Protocol.HTTP({
+                    url: "countries",
                     params: {
                         epsg: "900913",
                         attrs: "pays,continent"
+                    },
+                    format: new OpenLayers.Format.GeoJSON()
+                }),
+                eventListeners: {
+                    featureselected: function(e) {
+                        var f = e.feature;
+                        var html = "<p>Country: "+f.attributes.pays+"</p>" +
+                            "<p>Continent: "+f.attributes.continent+"</p>";
+                        f.geometry.transform(
+                            map.displayProjection, map.projection);
+                        if (!this._popup) {
+                            this._popup = new GeoExt.Popup({
+                                html: html,
+                                map: map,
+                                closeAction: 'hide',
+                                unpinnable: false
+                            });
+                        }
+                        else {
+                            this._popup.body.update(html);
+                            this._popup.doLayout();
+                        }
+                        this._popup.feature = f;
+                        this._popup.show();
                     }
-                },
-                displayDefaultPopup: true
+                }
             })
         }));
         var ctrl = new OpenLayers.Control.NavigationHistory();
@@ -151,7 +179,6 @@ mapfishapp.layout = (function() {
          * Initialize the page layout.
          */
         init: function() {
-            Ext.QuickTips.init();
 
             var map = createMap();
             var layers = createLayers();
@@ -186,6 +213,9 @@ mapfishapp.layout = (function() {
                     region: "west",
                     width: 150,
                     xtype: "treepanel",
+                    loader: new Ext.tree.TreeLoader({
+                        applyLoader: false
+                    }),
                     root: {
                         nodeType: "gx_layercontainer",
                         layerStore: layerStore,
