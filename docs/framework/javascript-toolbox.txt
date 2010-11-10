@@ -24,7 +24,7 @@ Let's now look at what the ``paster create -t mapfish_client`` command does.
 In addition to replacing the ``favicon.ico`` and ``index.html`` file the
 command creates three new directories in the application's ``public`` directory.
 
-``mfbase``
+``lib``
     This directory contains the JavaScript toolbox. It includes sub-directories
     for the `Ext <http://extjs.com>`_, `OpenLayers
     <http://www.openlayers.org>`_, `GeoExt <http://www.geoext.org>`_, and
