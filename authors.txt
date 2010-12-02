@@ -1,0 +1,199 @@
+# Content generated with
+# for f in $(find . -type f | grep -v ".svn"); do echo $f; svn log $f | gawk -F '|' '/^r[[:digit:]]+/ {print $2}' | sort | uniq; done
+# (might not be optimal, sorry)
+
+./util/gen-go-mapfish-framework.py
+ bbinet 
+ fvanderbiest 
+./LICENSE
+ fvanderbiest 
+./authors.txt
+./mapfish/controllers/printer.py
+ aabt 
+ alex 
+ cmoullet 
+ elemoine 
+ fredj 
+ fvanderbiest 
+ pvalsecc 
+./mapfish/controllers/__init__.py
+ alex 
+ elemoine 
+ fvanderbiest 
+ pvalsecc 
+./mapfish/controllers/security.py
+ alex 
+ elemoine 
+ fredj 
+ fvanderbiest 
+ sypasche 
+./mapfish/controllers/auth_proxy.py
+ alex 
+ elemoine 
+ fvanderbiest 
+ sypasche 
+ yves 
+./mapfish/templates/project/layers.ini_tmpl
+ alex 
+ elemoine 
+./mapfish/templates/test_controller.py_tmpl
+ alex 
+ elemoine 
+./mapfish/templates/model.py_tmpl
+ alex 
+ elemoine 
+./mapfish/templates/controller.py_tmpl
+ alex 
+ bbinet 
+ elemoine 
+ fredj 
+./mapfish/sqlalchemygeom.py
+ alex 
+ elemoine 
+ fredj 
+ fvanderbiest 
+ pvalsecc 
+ sypasche 
+./mapfish/commands.py
+ alex 
+ bbinet 
+ elemoine 
+ fvanderbiest 
+ pgiraud 
+./mapfish/decorators/__init__.py
+ elemoine 
+ fvanderbiest 
+./mapfish/tests/test_postgis.py
+ elemoine 
+ fvanderbiest 
+ tsauerwein 
+./mapfish/tests/test_mysql.py
+ elemoine 
+ fvanderbiest 
+ tsauerwein 
+./mapfish/tests/test_oracle.py
+ elemoine 
+ fvanderbiest 
+ tsauerwein 
+./mapfish/tests/__init__.py
+ elemoine 
+ fvanderbiest 
+./mapfish/tests/test_spatialite.py
+ elemoine 
+ fvanderbiest 
+ tsauerwein 
+./mapfish/tests/test_decorators.py
+ elemoine 
+ fvanderbiest 
+./mapfish/tests/test_protocol.py
+ alex 
+ elemoine 
+ fvanderbiest 
+./mapfish/__init__.py
+ alex 
+ elemoine 
+ fvanderbiest 
+ sypasche 
+./mapfish/protocol.py
+ aabt 
+ alex 
+ bbinet 
+ dcorpataux 
+ elemoine 
+ fredj 
+ fvanderbiest 
+ pvalsecc 
+ yves 
+./mapfish/util.py
+ alex 
+ bbinet 
+ elemoine 
+ fvanderbiest 
+./mapfish/plugins/pgrouting.py
+ alex 
+ elemoine 
+ fvanderbiest 
+ sypasche 
+./mapfish/plugins/__init__.py
+ alex 
+ elemoine 
+ fvanderbiest 
+ sypasche 
+./.gitignore
+ elemoine 
+./setup.py
+ alex 
+ bbinet 
+ elemoine 
+ fredj 
+ fvanderbiest 
+ pvalsecc 
+ sypasche 
+./MANIFEST.in
+ alex 
+ elemoine 
+./README
+ alex 
+ elemoine 
+ fredj 
+ sypasche 
+./docs/reference/protocol.txt
+ elemoine 
+./docs/reference/sqlalchemygeom.txt
+ elemoine 
+./docs/reference/index.txt
+ elemoine 
+./docs/framework/spatial-databases.txt
+ elemoine 
+ tsauerwein 
+./docs/framework/webservice.txt
+ elemoine 
+ tsauerwein 
+./docs/framework/upgrading.txt
+ elemoine 
+./docs/framework/_static/countries.zip
+ elemoine 
+./docs/framework/javascript-toolbox.txt
+ bbinet 
+ elemoine 
+./docs/framework/mapfish-application.txt
+ elemoine 
+./docs/framework/index.txt
+ elemoine 
+./docs/framework/customizing-webservices.txt
+ elemoine 
+ tsauerwein 
+./docs/quickstart.txt
+ elemoine 
+./docs/.gitignore
+ elemoine 
+./docs/make.bat
+ elemoine 
+./docs/protocol.txt
+ elemoine 
+./docs/_static/layout.js
+ elemoine 
+./docs/_static/query.png
+ elemoine 
+./docs/_static/geojson.png
+ elemoine 
+./docs/_static/osm.png
+ elemoine 
+./docs/_static/pylons.png
+ elemoine 
+./docs/_static/mapfish.css
+ elemoine 
+./docs/conf.py
+ elemoine 
+./docs/Makefile
+ elemoine 
+./docs/installation.txt
+ elemoine 
+./docs/index.txt
+ elemoine 
+./ez_setup/__init__.py
+ alex 
+ elemoine 
+./ez_setup/README.txt
+ alex 
+ elemoine 
