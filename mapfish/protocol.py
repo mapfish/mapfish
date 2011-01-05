@@ -278,7 +278,7 @@ class Protocol(object):
             objs = self._query(request, filter)
             ret = FeatureCollection(
                     [self._filter_attrs(o.toFeature(), request) \
-                        for o in objs if o.geometry is not None])
+                        for o in objs])
         return ret
 
     def create(self, request, response, execute=True):
@@ -310,8 +310,7 @@ class Protocol(object):
             self.Session.commit()
         response.status = 201
         if len(objects) > 0:
-            features = [o.toFeature() for o in objects \
-                            if o.geometry is not None]
+            features = [o.toFeature() for o in objects]
             return FeatureCollection(features)
         return
 

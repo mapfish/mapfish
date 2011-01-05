@@ -211,14 +211,16 @@ class GeometryTableMixIn(object):
         if hasattr(self.geometry, 'shape') and self.geometry.shape is not None:
             # we already have the geometry as Shapely geometry (when updating/inserting)
             geometry = self.geometry.shape
-        else:
+        elif hasattr(self.geometry, 'geom_wkb') and self.geometry.geom_wkb is not None:
             # create a Shapely geometry from the WKB geometry returned from the database
             geometry = loads(str(self.geometry.geom_wkb))
+        else:
+            geometry = None
 
         return Feature(id=self.fid, 
                        geometry=geometry,
                        properties=attributes,
-                       bbox=geometry.bounds)
+                       bbox=None if geometry is None else geometry.bounds)
 
 
 class within_distance(BaseFunction):

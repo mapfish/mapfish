@@ -109,7 +109,7 @@ class Test(unittest.TestCase):
             Spot(spot_height=333.12, spot_location='POINT(2 3)'),
             Spot(spot_height=783.55, spot_location='POINT(38 34)'),
             Spot(spot_height=3454.67, spot_location='POINT(-134 45)'),
-            Spot(spot_height=6454.23, spot_location='POINT(-135 56)')
+            Spot(spot_height=6454.23, spot_location=None)
             ])
         
         session.commit()
@@ -348,6 +348,20 @@ class Test(unittest.TestCase):
         eq_(feature.geometry.coordinates, (0.0, 0.0))
         eq_(feature.properties["spot_height"], 420.39999999999998)
         proto = Protocol(session, Spot)
+
+
+    def test_protocol_read_one_null(self):
+        """Return one null feature"""
+        proto = Protocol(session, Spot)
+
+        feature = proto.read(FakeRequest({}), id=9)
+        ok_(feature is not None)
+        ok_(isinstance(feature, Feature))
+        eq_(feature.id, 9)
+        # make use of __geo_interface__ property since 'geometry'
+        # value is not the same in various versions of geojson lib
+        ok_(feature.__geo_interface__['geometry'] is None)
+        ok_(feature.__geo_interface__['bbox'] is None)
 
 
     @raises(HTTPNotFound)
