@@ -306,13 +306,18 @@ class Protocol(object):
             if create:
                 self.Session.add(obj)
             objects.append(obj)
+        # We call flush, create the feature collection, and then commit. Commit
+        # expires the session, so we create the feature collection before
+        # commit to avoid SELECT queries in toFeature.
+        if execute:
+            self.Session.flush()
+        collection = None
+        if len(objects) > 0:
+            collection = FeatureCollection([o.toFeature() for o in objects])
         if execute:
             self.Session.commit()
         response.status = 201
-        if len(objects) > 0:
-            features = [o.toFeature() for o in objects]
-            return FeatureCollection(features)
-        return
+        return collection
 
     def update(self, request, response, id):
         """ Read the GeoJSON feature from the request body and update the
@@ -330,9 +335,14 @@ class Protocol(object):
         if self.before_update is not None:
             self.before_update(request, feature, obj)
         self.__copy_attributes(feature, obj)
+        # We call flush, create the feature, and then commit. Commit expires
+        # the session, so we create the feature before commit to avoid SELECT
+        # queries in toFeature.
+        self.Session.flush()
+        feature = obj.toFeature()
         self.Session.commit()
         response.status = 201
-        return obj.toFeature()
+        return feature
 
     def delete(self, request, response, id):
         """ Remove the targetted feature from the database """
@@ -351,11 +361,13 @@ class Protocol(object):
     def __copy_attributes(self, json_feature, obj):
         """Updates the passed-in object with the values
         from the GeoJSON feature."""
-        # create a Shapely geometry from GeoJSON and persist the geometry using WKB
+        # create a Shapely geometry from GeoJSON and persist the geometry
+        # using WKB
         shape = asShape(json_feature.geometry)
         srid = self.mapped_class.geometry_column().type.srid
         obj.geometry = WKBSpatialElement(buffer(shape.wkb), srid=srid)
-        # also store the Shapely geometry so that we can use it to return the geometry as GeoJSON
-        obj.geometry.shape = shape
+        # also store the Shapely geometry so that we can use it to return the
+        # geometry as GeoJSON and avoid a SELECT
+        obj._mf_shape = shape
         for key in json_feature.properties:
             obj[key] = json_feature.properties[key]

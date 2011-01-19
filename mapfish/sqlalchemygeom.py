@@ -208,9 +208,9 @@ class GeometryTableMixIn(object):
             if k != fid_column and k != geom_column and hasattr(self, k):
                 attributes[k] = getattr(self, k)
         
-        if hasattr(self.geometry, 'shape') and self.geometry.shape is not None:
+        if hasattr(self, '_mf_shape') and self._mf_shape is not None:
             # we already have the geometry as Shapely geometry (when updating/inserting)
-            geometry = self.geometry.shape
+            geometry = self._mf_shape
         elif hasattr(self.geometry, 'geom_wkb') and self.geometry.geom_wkb is not None:
             # create a Shapely geometry from the WKB geometry returned from the database
             geometry = loads(str(self.geometry.geom_wkb))

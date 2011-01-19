@@ -329,6 +329,6 @@ class Test(unittest.TestCase):
         assert len(Session.new) == 2
         for obj in Session.new:
             assert obj["text"] == "foo"
-            assert obj.geometry.shape.x == 45
-            assert obj.geometry.shape.y == 5
+            assert obj._mf_shape.x == 45
+            assert obj._mf_shape.y == 5
         Session.rollback()
