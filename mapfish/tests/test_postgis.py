@@ -32,7 +32,7 @@ import unittest
 from nose.tools import eq_, ok_, raises
 
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import (create_engine, MetaData, Column, Integer, Numeric)
+from sqlalchemy import (create_engine, MetaData, Column, Integer, Numeric, Boolean)
 from sqlalchemy import orm
 
 from geoalchemy import (Point, Polygon, GeometryColumn, GeometryDDL)
@@ -59,6 +59,7 @@ class Spot(Base, GeometryTableMixIn):
 
     spot_id = Column(Integer, primary_key=True)
     spot_height = Column(Numeric(asdecimal=False))
+    spot_goodness = Column(Boolean)
     spot_location = GeometryColumn(Point(2))
 
 GeometryDDL(Spot.__table__)
@@ -82,15 +83,15 @@ class Test(unittest.TestCase):
 
         # Insert some points into the database
         session.add_all([
-            Spot(spot_height=420.40, spot_location='POINT(0 0)'),
-            Spot(spot_height=102.34, spot_location='POINT(10 10)'),
-            Spot(spot_height=388.62, spot_location='POINT(10 11)'),
-            Spot(spot_height=1454.66, spot_location='POINT(40 34)'),
-            Spot(spot_height=54.66, spot_location='POINT(5 5)'),
-            Spot(spot_height=333.12, spot_location='POINT(2 3)'),
-            Spot(spot_height=783.55, spot_location='POINT(38 34)'),
-            Spot(spot_height=3454.67, spot_location='POINT(-134 45)'),
-            Spot(spot_height=6454.23, spot_location=None)
+            Spot(spot_height=420.40, spot_location='POINT(0 0)', spot_goodness=True),
+            Spot(spot_height=102.34, spot_location='POINT(10 10)', spot_goodness=True),
+            Spot(spot_height=388.62, spot_location='POINT(10 11)', spot_goodness=True),
+            Spot(spot_height=1454.66, spot_location='POINT(40 34)', spot_goodness=True),
+            Spot(spot_height=54.66, spot_location='POINT(5 5)', spot_goodness=True),
+            Spot(spot_height=333.12, spot_location='POINT(2 3)', spot_goodness=True),
+            Spot(spot_height=783.55, spot_location='POINT(38 34)', spot_goodness=True),
+            Spot(spot_height=3454.67, spot_location='POINT(-134 45)', spot_goodness=True),
+            Spot(spot_height=6454.23, spot_location=None, spot_goodness=False)
             ])
         
         session.commit()
@@ -106,7 +107,7 @@ class Test(unittest.TestCase):
         proto = Protocol(session, Spot)
         
         request = FakeRequest({})
-        request.body = '{"type": "FeatureCollection", "features": [{"type": "Feature", "properties": {"spot_height": 12.0}, "geometry": {"type": "Point", "coordinates": [45, 5]}}]}'
+        request.body = '{"type": "FeatureCollection", "features": [{"type": "Feature", "properties": {"spot_height": 12.0, "spot_goodness": true}, "geometry": {"type": "Point", "coordinates": [45, 5]}}]}'
         
         response = FakeResponse()
         collection = proto.create(request, response)
@@ -116,10 +117,12 @@ class Test(unittest.TestCase):
         eq_(feature0.id, 10)
         eq_(feature0.geometry.coordinates, (45.0, 5.0))
         eq_(feature0.properties["spot_height"], 12)
+        eq_(feature0.properties["spot_goodness"], True)
 
         new_spot = session.query(Spot).filter(Spot.spot_height==12.0).one()
         ok_(new_spot is not None)
         eq_(session.scalar(new_spot.spot_location.wkt), u'POINT(45 5)')
+        eq_(new_spot.spot_goodness, True)
         
 
     def test_protocol_create_and_update(self):
@@ -328,6 +331,7 @@ class Test(unittest.TestCase):
         eq_(feature.id, 1)
         eq_(feature.geometry.coordinates, (0.0, 0.0))
         eq_(feature.properties["spot_height"], 420.39999999999998)
+        eq_(feature.properties["spot_goodness"], True)
 
 
     def test_protocol_read_one_null(self):

@@ -49,7 +49,7 @@ class Controller(WSGIController):
     def return_feature(self):
         return Feature(id=1,
                        geometry=Point(1, 2),
-                       properties={"key": "val"}
+                       properties={"strkey": "strval", "boolkey": True}
                        )
 
     @geojsonify
@@ -64,7 +64,7 @@ class Controller(WSGIController):
     def return_feature_with_callback(self):
         return Feature(id=1,
                        geometry=Point(1, 2),
-                       properties={"key": "val"}
+                       properties={"strkey": "strval", "boolkey": True}
                        )
 
 environ = {}
@@ -87,7 +87,7 @@ class Test(TestWSGIController):
         response = self.get_response(action='return_feature')
         assert response.status == 200
         assert response.response.content_type == 'application/json'
-        assert response.body == '{"geometry": {"type": "Point", "coordinates": [1.0, 2.0]}, "type": "Feature", "properties": {"key": "val"}, "id": 1}'
+        assert response.body == '{"geometry": {"type": "Point", "coordinates": [1.0, 2.0]}, "type": "Feature", "properties": {"boolkey": true, "strkey": "strval"}, "id": 1}'
 
     def test_feature_collection(self):
         response = self.get_response(action='return_feature_collection')
@@ -100,4 +100,4 @@ class Test(TestWSGIController):
                                      test_args=dict(params={'foo': 'jsfunc'}))
         assert response.status == 200
         assert response.response.content_type == 'text/javascript'
-        assert response.body == 'jsfunc({"geometry": {"type": "Point", "coordinates": [1.0, 2.0]}, "type": "Feature", "properties": {"key": "val"}, "id": 1});'
+        assert response.body == 'jsfunc({"geometry": {"type": "Point", "coordinates": [1.0, 2.0]}, "type": "Feature", "properties": {"boolkey": true, "strkey": "strval"}, "id": 1});'
