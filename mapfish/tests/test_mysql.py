@@ -358,20 +358,3 @@ class Test(unittest.TestCase):
         proto = Protocol(session, Spot)
 
         proto.read(FakeRequest({}), id=-1)
-
-
-    def test_within_distance(self):
-        """Test the MySQL implementation for within_distance"""
-        from mapfish.sqlalchemygeom import within_distance
-        
-        eq_(session.scalar(within_distance('POINT(-88.9139332929936 42.5082802993631)', 
-                                                               'POINT(-88.9139332929936 35.5082802993631)', 10)), True)
-        ok_(session.scalar(within_distance('Point(0 0)', 'Point(0 0)', 0)))
-        ok_(session.scalar(within_distance('Point(0 0)', 
-                                           'Polygon((-5 -5, 5 -5, 5 5, -5 5, -5 -5))', 0)))
-        ok_(session.scalar(within_distance('Point(5 5)', 
-                                           'Polygon((-5 -5, 5 -5, 5 5, -5 5, -5 -5))', 0)))
-        ok_(session.scalar(within_distance('Point(6 5)', 
-                                           'Polygon((-5 -5, 5 -5, 5 5, -5 5, -5 -5))', 1)))
-        ok_(session.scalar(within_distance('Polygon((0 0, 1 0, 1 8, 0 8, 0 0))', 
-                                           'Polygon((-5 -5, 5 -5, 5 5, -5 5, -5 -5))', 0)))

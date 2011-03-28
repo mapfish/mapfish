@@ -42,8 +42,6 @@ from geoalchemy.functions import functions
 
 from geojson import Feature, FeatureCollection, loads, GeoJSON
 
-from mapfish.sqlalchemygeom import within_distance
-
 
 def create_geom_filter(request, mapped_class, **kwargs):
     """Create MapFish geometry filter based on the request params. Either
@@ -89,11 +87,11 @@ def create_geom_filter(request, mapped_class, **kwargs):
     wkb_geometry = WKBSpatialElement(buffer(geometry.wkb), epsg)
 
     if 'additional_params' in kwargs:
-        return within_distance(geom_column, wkb_geometry, tolerance,
-                               kwargs['additional_params'])
+        return functions._within_distance(geom_column, wkb_geometry, tolerance,
+                                          kwargs['additional_params'])
     else:
-        return within_distance(geom_column, wkb_geometry, tolerance)
- 
+        return functions._within_distance(geom_column, wkb_geometry, tolerance)
+
 def create_attr_filter(request, mapped_class):
     """Create an ``and_`` SQLAlchemy filter (a ClauseList object) based
     on the request params (``queryable``, ``eq``, ``ne``, ...)."""

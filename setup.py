@@ -38,7 +38,7 @@ import sys
 requirements = ['SQLAlchemy>=0.6.1,<=0.6.99',
                 'Pylons>=1.0,<=1.0.99',
                 'geojson>=1.0,<=1.0.99',
-                'GeoAlchemy>=0.4,<=0.4.99']
+                'GeoAlchemy>=0.5,<=0.5.99']
 
 # Shapely and Psychopg2 cannot be installed on Windows via python eggs
 if sys.platform != 'win32':

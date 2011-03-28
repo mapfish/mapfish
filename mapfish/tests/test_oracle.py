@@ -387,39 +387,3 @@ class Test(unittest.TestCase):
         proto = Protocol(session, Spot)
         
         proto.read(FakeRequest({}), id=-1)
-
-
-    def test_within_distance(self):
-        """Test the Oracle implementation for within_distance
-        
-        Because SDO_WITHIN_DISTANCE requires a spatial index for the geometry used
-        as first parameter, we have to insert out test geometries into tables,
-        unlike to the other databases.
-        
-        Note that Oracle uses meter as unit for the tolerance value for geodetic coordinate
-        systems (like 4326)!
-        """
-        from mapfish.sqlalchemygeom import within_distance
-        
-        # test if SDO_WITHIN_DISTANCE is called correctly
-        eq_(session.query(Spot).filter(within_distance(Spot.spot_location, 'POINT(0 0)', 0)).count(), 1)
-        eq_(session.query(Spot).filter(within_distance(Spot.spot_location, 'POINT(0 0)', 0.1)).count(), 1)
-        eq_(session.query(Spot).filter(within_distance(Spot.spot_location, 'POINT(9 9)', 100000)).count(), 0)
-        
-        eq_(session.query(Spot).filter(within_distance(Spot.spot_location, 
-                                                       'Polygon((-5 -5, 5 -5, 5 5, -5 5, -5 -5))', 0)).count(), 3)
-        
-        eq_(session.query(Spot).filter(within_distance(Spot.spot_location, 
-                                                       'Polygon((-10 -10, 10 -10, 10 10, -10 10, -10 -10))', 0)).count(), 4)
-        
-        eq_(session.query(Spot).filter(within_distance(Spot.spot_location, 
-                                                       'Polygon((-10 -10, 10 -10, 10 10, -10 10, -10 -10))', 200000)).count(), 5)
-
-        # test if SDO_GEOM.WITHIN_DISTANCE is called correctly
-        eq_(session.scalar(select([text('1')], from_obj=['dual']).where(
-                                                    within_distance('POINT(0 0)', 'POINT(0 0)', 0, 
-                                                                    {'tol' : 0.00000005}))), 1)
-        eq_(session.scalar(select([text('1')], from_obj=['dual']).where(
-                                                    within_distance('POINT(0 0)', 'POINT(0 0)', 0, 
-                                                                    {'dim1' : text(diminfo),
-                                                                     'dim2' : text(diminfo)}))), 1)
