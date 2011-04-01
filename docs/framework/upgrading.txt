@@ -2,19 +2,19 @@ Upgrading
 ---------
 
 This section provides information for upgrading a MapFish application from
-MapFish 1.2 to MapFish 2.0
+MapFish 1.2 to MapFish 2.x
 
 Pylons 1.0
 ~~~~~~~~~~
 
-MapFish 1.2 is based on Pylons 0.9.7, and MapFish 2.0 is based on Pylons 1.0.
-So to upgrade an application from MapFish 1.2 to MapFish 2.0 it is first needed
+MapFish 1.2 is based on Pylons 0.9.7, and MapFish 2.x is based on Pylons 1.0.
+So to upgrade an application from MapFish 1.2 to MapFish 2.x it is first needed
 to upgrade that application from Pylons 0.9.7 to Pylons 1.0. For this refer to
 the `Pylons 1.0 Upgrading page <http://pylonshq.com/docs/en/1.0/upgrading/>`_,
 and follow the provided indications.
 
 .. note:
-    MapFish 2.0 depending on Pylons 1.0, you will run into dependency issues if
+    MapFish 2.x depending on Pylons 1.0, you will run into dependency issues if
     you attempt to upgrade to Pylons 0.10. So it is recommended not to attempt
     it.
 
@@ -54,14 +54,14 @@ the model and base controller. Here's additional information:
 The application should now be upgraded to Pylons 1.0, and it is now time to do
 MapFish-specific adjusments.
 
-MapFish 2.0
+MapFish 2.x
 ~~~~~~~~~~~
 
 GeoAlchemy
 ^^^^^^^^^^
 
-MapFish 2.0 is based on `GeoAlchemy <http://geoalchemy.org>`_. GeoAlchemy
-provides extensions to SQLAlchemy for use with spatial databases. MapFish 2.0
+MapFish 2.x is based on `GeoAlchemy <http://geoalchemy.org>`_. GeoAlchemy
+provides extensions to SQLAlchemy for use with spatial databases. MapFish 2.x
 no longer defines the ``Geometry`` type, the one defined by GeoAlchemy is to be
 used instead.
 
@@ -89,7 +89,7 @@ looked like this::
 
     mapper(User, users_table)
 
-With MapFish 2.0 the same ``user`` model looks like this::
+With MapFish 2.x the same ``user`` model looks like this::
 
     from sqlalchemy import Column, types
 
@@ -110,7 +110,7 @@ With MapFish 2.0 the same ``user`` model looks like this::
 Filters
 ^^^^^^^
 
-The ``Filter`` abstraction is no longer. With MapFish 2.0 only SQLAlchemy
+The ``Filter`` abstraction is no longer. With MapFish 2.x only SQLAlchemy
 filters (``ClauseElement``) are manipulated.
 
 The `create_default_filter()
@@ -141,7 +141,7 @@ to::
 geojsonify
 ^^^^^^^^^^
 
-MapFish 2.0 introduces the ``geojsonify`` decorator for generating GeoJSON.
+MapFish 2.x introduces the ``geojsonify`` decorator for generating GeoJSON.
 
 With MapFish 1.2 the ``paster mf-layer`` command generated controller files
 that looked like this::
@@ -182,7 +182,7 @@ that looked like this::
             """DELETE /id: Delete an existing feature."""
             return self.protocol.delete(request, response, id)
 
-With MapFish 2.0 the same ``user`` controller looks like this::
+With MapFish 2.x the same ``user`` controller looks like this::
 
     from pylons import request, response, session, tmpl_context as c
     from pylons.controllers.util import abort, redirect
