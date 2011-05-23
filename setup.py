@@ -35,14 +35,14 @@ except ImportError:
 
 import sys
 
-requirements = ['SQLAlchemy>=0.6.1,<=0.6.99',
-                'Pylons>=1.0,<=1.0.99',
-                'geojson>=1.0,<=1.0.99',
-                'GeoAlchemy>=0.5,<=0.5.99']
+requirements = ['SQLAlchemy>=0.6.1',
+                'Pylons>=1.0',
+                'geojson>=1.0',
+                'GeoAlchemy>=0.5']
 
 # Shapely and Psychopg2 cannot be installed on Windows via python eggs
 if sys.platform != 'win32':
-    requirements.append('Shapely>=1.2,<=1.2.99')
+    requirements.append('Shapely>=1.2')
 
 # add dependency on ctypes only for python < 2.5 wich does not embed ctypes
 if sys.version_info < (2, 5):
@@ -50,7 +50,7 @@ if sys.version_info < (2, 5):
 
 
 setup(name                 = 'mapfish',
-      version              = '2.0dev',
+      version              = '2.1.1dev',
       license              = 'Modified BSD',
       install_requires     = requirements,
       zip_safe             = False,
