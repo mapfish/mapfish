@@ -26,6 +26,14 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+#
+# Portions of this file were inpired by code from FeatureServer
+# (http://featureserver.org). FeatureServer is relased under the "open source
+# license by Metacarta", which is identical to the BSD license except for
+# specific clauses. This license terms are defined here:
+# http://featureserver.org/license.html
+#
+
 import logging
 log = logging.getLogger(__name__)
 
