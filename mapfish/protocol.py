@@ -301,7 +301,7 @@ class Protocol(object):
         for feature in collection.features:
             create = False
             obj = None
-            if isinstance(feature.id, int):
+            if feature.id is not None:
                 obj = self.Session.query(self.mapped_class).get(feature.id)
             if self.before_create is not None:
                 self.before_create(request, feature, obj)
