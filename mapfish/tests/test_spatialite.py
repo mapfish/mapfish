@@ -58,7 +58,7 @@ connection.enable_load_extension(True)
 
 # load the Spatialite extension
 session = orm.scoped_session(sm)
-session.execute("select load_extension('/usr/local/lib/libspatialite/lib/libspatialite.so')")
+session.execute("select load_extension('/usr/lib/libspatialite.so')")
 session.execute("SELECT InitSpatialMetaData()")
 connection.enable_load_extension(False)
 session.commit()
