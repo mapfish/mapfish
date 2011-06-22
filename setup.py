@@ -50,7 +50,7 @@ if sys.version_info < (2, 5):
 
 
 setup(name                 = 'mapfish',
-      version              = '2.1.1dev',
+      version              = '2.2',
       license              = 'Modified BSD',
       install_requires     = requirements,
       zip_safe             = False,
