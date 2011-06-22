@@ -24,15 +24,15 @@ For Windows, we assume in the rest of this page that Python 2.5 is installed in
 Installing MapFish
 ------------------
 
-To install MapFish, `download <http://www.mapfish.org/downloads/go-mapfish-framework-2.0.py>`_ the installation script, and execute it from a terminal.
+To install MapFish, `download <http://www.mapfish.org/downloads/go-mapfish-framework-2.2.py>`_ the installation script, and execute it from a terminal.
 
 On a Unix system::
 
-    $ python go-mapfish-framework-2.0.py --no-site-packages env
+    $ python go-mapfish-framework-2.2.py --no-site-packages env
 
 On a Windows system::
 
-    C:\> C:\Python25\python.exe go-mapfish-framework-2.0.py --no-site-packages env
+    C:\> C:\Python25\python.exe go-mapfish-framework-2.2.py --no-site-packages env
 
 This command creates a virtual Python environment named ``env`` and installs
 MapFish and its dependencies into it.
