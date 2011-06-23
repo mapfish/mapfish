@@ -64,11 +64,24 @@ Installing the JavaScript toolbox
 You are now going to install the MapFish JavaScript toolbox in your
 application. This toolbox includes:
 
-* the Ext, OpenLayers, GeoExt and MapFish Client JavaScript libraries,
+* the ExtJS, OpenLayers, GeoExt JavaScript libraries,
 * a sample JavaScript application based on those libraries,
 * a build profile for minifying the JavaScript code of this sample
   application,
 * a JavaScript testing framework, with a test example
+
+Installing the JavaScript toolbox is done by applying the ``mapfish_client``
+template.
+
+.. warning::
+
+    Version 0.2 of ``mapfish.plugin.client``, which is the Python package
+    providing the ``mapfish_client`` template, includes versions of OpenLayers
+    and GeoExt that don't work with FireFox 4 and later when the JavaScript
+    code is not built.
+
+    You can list the content of ``env/lib/python2.5/site-packages`` to know
+    what version of ``mapfish.plugin.client`` is in use.
 
 Enter ``Ctrl+C`` to stop the Paster server and proceed with these
 commands::
