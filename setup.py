@@ -110,7 +110,7 @@ setup(name                 = 'mapfish',
       Current status
       --------------
 
-      MapFish 2.0dev described in this page is the current stable version.
+      MapFish 2.2 described in this page is the current stable version.
 
       Download and Installation
       -------------------------
