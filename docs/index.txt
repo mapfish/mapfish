@@ -1,4 +1,4 @@
-Mapfish 2.0
+Mapfish 2.2
 ************
 
 Getting started
