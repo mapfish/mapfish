@@ -1,4 +1,4 @@
-Mapfish 2.2
+MapFish 2.2
 ************
 
 Getting started
@@ -19,3 +19,14 @@ Main docs
    framework/index
    protocol
    reference/index
+
+Warranty disclaimer and license
+-------------------------------
+
+The authors provide these document "AS-IS", without warranty of any kind either
+expressed or implied.
+
+Document under `Creative Common License Attribution-Share Alike 2.5 Generic
+<http://creativecommons.org/licenses/by-sa/2.5/>`_.
+
+Authors: MapFish developers.
